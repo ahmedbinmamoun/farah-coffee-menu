@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Farah Coffee | لوحة التحكم</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg: #120E0A; --surface: #1C1610; --surface-2: #241C13;
+    --gold: #C9A44D; --gold-soft: #8B7355; --cream: #F3E9D8; --cream-dim: #C9BEA9;
+    --line: rgba(201,164,77,0.22); --success: #7FA66B; --off: #6E6252;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: #0f0c08;
+    color: var(--cream); font-family: 'Tajawal', sans-serif;
+    min-height: 100vh; padding-bottom: 60px;
+  }
+  .en{ font-family:'Cormorant Garamond', serif; direction: ltr; }
+
+  header{
+    padding: 26px 20px; border-bottom: 1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+  }
+  header h1{ font-size: 18px; margin:0; color: var(--cream); }
+  header h1 span{ display:block; font-size: 11px; color: var(--gold-soft); font-weight:400; margin-top:4px; letter-spacing:1px; }
+  .badge{ background: var(--surface); border:1px solid var(--line); color: var(--gold); font-size:12px; padding:6px 12px; border-radius: 999px; }
+
+  main{ max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+
+  .qr-card{
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 20px; display:flex; align-items:center; gap:18px; margin-bottom: 28px;
+  }
+  .qr-box{ background:#fff; padding:8px; border-radius:8px; flex-shrink:0; width: 90px; height:90px; display:flex; align-items:center; justify-content:center; }
+  .qr-card h3{ margin:0 0 5px; font-size:14px; }
+  .qr-card p{ margin:0; font-size:12px; color: var(--cream-dim); line-height:1.7; }
+
+  .category-block{ margin-bottom: 30px; }
+  .category-title{
+    font-size: 14px; color: var(--gold); letter-spacing: 1px; margin: 0 0 12px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--line);
+  }
+  .item{
+    display:flex; justify-content:space-between; align-items:center; gap: 12px;
+    padding: 12px 4px; border-bottom: 1px dashed rgba(201,164,77,0.14);
+  }
+  .item:last-child{ border-bottom:none; }
+  .item.unavailable .item-names{ opacity:.4; }
+  .item-names{ display:flex; flex-direction:column; gap:2px; }
+  .name-ar{ font-size: 14px; color: var(--cream); }
+  .name-en{ font-size: 11px; color: var(--cream-dim); }
+  .item-controls{ display:flex; align-items:center; gap: 12px; flex-shrink:0; }
+  .delete-btn{
+    background: transparent; border: 1px solid rgba(201,164,77,0.3); color: var(--gold-soft);
+    width: 26px; height: 26px; border-radius: 6px; cursor:pointer; font-size: 14px; line-height:1;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .delete-btn:hover{ border-color:#b15b52; color:#d98a80; }
+
+  .add-item-btn{
+    width: 100%; margin-top: 6px; background: transparent; border: 1px dashed var(--line); color: var(--gold-soft);
+    padding: 10px; border-radius: 8px; font-family:'Tajawal'; font-size: 12.5px; cursor:pointer;
+  }
+  .add-item-btn:hover{ color: var(--gold); border-color: var(--gold); }
+
+  .add-form{
+    display:none; gap: 8px; margin-top: 10px; padding: 12px; background: var(--surface); border:1px solid var(--line); border-radius: 8px;
+    flex-wrap: wrap;
+  }
+  .add-form.show{ display:flex; }
+  .add-form input{
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--cream);
+    border-radius: 6px; padding: 8px 10px; font-family:'Tajawal'; font-size: 13px;
+  }
+  .add-form input.name-field{ flex: 1 1 140px; }
+  .add-form input.price-field{ width: 80px; font-family:'Cormorant Garamond'; text-align:center; }
+  .add-form button{
+    background: var(--gold); color:#1a140d; border:none; padding: 8px 16px; border-radius:6px;
+    font-family:'Tajawal'; font-size:12.5px; font-weight:700; cursor:pointer;
+  }
+
+  .price-input{
+    width: 68px; background: var(--surface-2); border: 1px solid var(--line); color: var(--gold);
+    border-radius: 7px; padding: 7px 6px; font-family:'Cormorant Garamond'; font-size:15px; text-align:center; font-weight:600;
+  }
+  .avail-toggle{
+    width: 34px; height: 20px; border-radius: 999px; background: var(--off); position:relative; cursor:pointer; border: none; padding:0;
+  }
+  .avail-toggle.on{ background: var(--success); }
+  .avail-toggle::after{
+    content:''; position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%; background:#fff;
+    transition: transform .2s ease;
+  }
+  .avail-toggle.on::after{ transform: translateX(-14px); }
+
+  .save-bar{
+    position: sticky; bottom: 0; margin-top: 20px; background: rgba(15,12,8,0.95); backdrop-filter: blur(6px);
+    border-top: 1px solid var(--line); padding: 14px 16px; display:flex; justify-content:flex-end; gap:10px;
+  }
+  .save-bar button{
+    background: var(--gold); color:#1a140d; border:none; padding: 10px 22px; border-radius:8px;
+    font-family:'Tajawal'; font-size:13px; font-weight:700; cursor:pointer;
+  }
+  .save-note{ align-self:center; font-size:12px; color: var(--gold-soft); margin-left:auto; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>لوحة تحكم المنيو <span>Farah Coffee — Admin</span></h1>
+  <div class="badge">وضع صاحب المحل</div>
+</header>
+
+<main>
+  <div class="qr-card">
+    <div class="qr-box" id="qrcode"></div>
+    <div>
+      <h3>باركود المنيو (اطبعه على الترابيزات)</h3>
+      <p>ده الباركود الثابت اللي بيوجه الزبون لصفحة المنيو العامة. مش محتاج تغيّره أبدًا — أي تعديل تعمله هنا بيظهر تلقائي للزبون لما يعمل سكان.</p>
+    </div>
+  </div>
+
+  <div id="categories"></div>
+
+  <div class="save-bar">
+    <span class="save-note" id="saveNote"></span>
+    <button onclick="saveChanges()">حفظ التعديلات</button>
+  </div>
+</main>
+
+<script>
+const menu = [
+  { id:"hot", ar:"المشروبات الساخنة", en:"Hot Drinks", items:[
+    ["قهوة سودانية","Sudanese Coffee",45,true],["قهوة فرح","Farah Coffee Special",55,true],
+    ["إسبريسو","Espresso",40,true],["امريكانو","Americano",45,true],["كابتشينو","Cappuccino",50,true],
+    ["نسكافي","Nescafe",40,true],["اوفلتين","Ovaltine",45,true],["لاتيه","Latte",50,true],
+    ["اسباني لاتيه","Spanish Latte",55,true],["كراميل لاتيه","Caramel Latte",55,true],["موكا","Mocha",55,true],
+    ["شوكولاتة ساخنة","Hot Chocolate",50,true],["قهوة تركية","Turkish Coffee",40,true],
+    ["شاي سادة","Tea",25,true],["شاي اخضر","Green Tea",30,true],["شاي لبن","Milk Tea",35,true],
+  ]},
+  { id:"cold", ar:"المشروبات الباردة", en:"Cold Drinks", items:[
+    ["موهيتو","Mojito",50,true],["ليمون","Lemon Juice",35,true],["فراولة","Strawberry Juice",45,true],
+    ["سلاش","Slash",45,true],["ايس امريكانو","Ice Americano",50,true],["ايس موكا","Ice Mocha",60,true],
+    ["ايس كوفي","Ice Coffee",55,true],["ايس اسباني لاتيه","Ice Spanish Latte",60,true],["ايس كراميل لاتيه","Ice Caramel Latte",60,true],
+  ]},
+  { id:"shake", ar:"ميلك شيك", en:"Milkshake", items:[
+    ["اسبريسو","Espresso Milkshake",60,true],["لوتس","Lotus Milkshake",65,true],["فراولة","Strawberry Milkshake",60,true],
+    ["اوريو","Oreo Milkshake",65,true],["كراميل","Caramel Milkshake",60,true],["شوكولاتة","Chocolate Milkshake",60,true],
+    ["فانيليا","Vanilla Milkshake",55,true],
+  ]}
+];
+
+const wrap = document.getElementById('categories');
+let itemCounter = 0;
+
+menu.forEach(cat => {
+  const block = document.createElement('div');
+  block.className = 'category-block';
+  block.id = 'block-' + cat.id;
+  block.innerHTML = `<h2 class="category-title">${cat.ar} <span class="en">— ${cat.en}</span></h2>` +
+    `<div class="items-list" id="list-${cat.id}">` +
+    cat.items.map(it => itemRow(cat.id, it[0], it[1], it[2], it[3])).join('') +
+    `</div>` +
+    `<button class="add-item-btn" onclick="showAddForm('${cat.id}')">+ إضافة صنف جديد في ${cat.ar}</button>` +
+    `<div class="add-form" id="form-${cat.id}">
+      <input class="name-field" id="new-ar-${cat.id}" placeholder="اسم الصنف بالعربي">
+      <input class="name-field" id="new-en-${cat.id}" placeholder="Item name (English)">
+      <input class="price-field" id="new-price-${cat.id}" type="number" placeholder="السعر">
+      <button onclick="addItem('${cat.id}')">إضافة</button>
+    </div>`;
+  wrap.appendChild(block);
+});
+
+function itemRow(catId, ar, en, price, available){
+  const uid = catId + '-' + (itemCounter++);
+  return `
+  <div class="item ${available ? '' : 'unavailable'}" id="item-${uid}">
+    <div class="item-names">
+      <div class="name-ar">${ar}</div>
+      <div class="name-en en">${en.toUpperCase()}</div>
+    </div>
+    <div class="item-controls">
+      <input class="price-input" type="number" value="${price}">
+      <button class="avail-toggle ${available ? 'on' : ''}" onclick="toggleAvail('${uid}', this)"></button>
+      <button class="delete-btn" title="حذف الصنف" onclick="deleteItem('${uid}')">✕</button>
+    </div>
+  </div>`;
+}
+
+function toggleAvail(uid, btn){
+  btn.classList.toggle('on');
+  document.getElementById('item-' + uid).classList.toggle('unavailable', !btn.classList.contains('on'));
+}
+
+function deleteItem(uid){
+  const row = document.getElementById('item-' + uid);
+  if(confirm('متأكد إنك عايز تحذف الصنف ده؟')){
+    row.remove();
+  }
+}
+
+function showAddForm(catId){
+  document.getElementById('form-' + catId).classList.toggle('show');
+}
+
+function addItem(catId){
+  const arInput = document.getElementById('new-ar-' + catId);
+  const enInput = document.getElementById('new-en-' + catId);
+  const priceInput = document.getElementById('new-price-' + catId);
+  const ar = arInput.value.trim();
+  const en = enInput.value.trim();
+  const price = priceInput.value;
+
+  if(!ar || !price){
+    alert('لازم تكتب اسم الصنف بالعربي والسعر على الأقل');
+    return;
+  }
+
+  const list = document.getElementById('list-' + catId);
+  list.insertAdjacentHTML('beforeend', itemRow(catId, ar, en || ar, price, true));
+
+  arInput.value = ''; enInput.value = ''; priceInput.value = '';
+  document.getElementById('form-' + catId).classList.remove('show');
+}
+
+function saveChanges(){
+  // في النسخة الحقيقية: هنا بيتبعت الطلب لـ Laravel API ويتحفظ في الداتابيز
+  document.getElementById('saveNote').textContent = '✓ اتحفظ (ديمو فقط — النسخة الحقيقية بتتصل بالسيرفر)';
+}
+
+// QR pointing to the public menu page (index.html) next to this file
+const menuUrl = window.location.href.replace(/admin\.html.*$/, 'index.html');
+new QRCode(document.getElementById("qrcode"), {
+  text: menuUrl, width: 74, height: 74, colorDark: "#120E0A", colorLight: "#ffffff",
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Farah Coffee | منيو</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #120E0A;
+    --surface: #1C1610;
+    --gold: #C9A44D;
+    --gold-soft: #8B7355;
+    --cream: #F3E9D8;
+    --cream-dim: #C9BEA9;
+    --line: rgba(201,164,77,0.22);
+    --off: #6E6252;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(ellipse at top, #1a140d 0%, #120E0A 55%, #0c0906 100%);
+    color: var(--cream);
+    font-family: 'Tajawal', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 50px;
+  }
+  .en{ font-family: 'Cormorant Garamond', serif; direction: ltr; }
+
+  /* HEADER / LOGO */
+  header{
+    padding: 40px 20px 26px;
+    text-align: center;
+    border-bottom: 1px solid var(--line);
+  }
+  .logo-wrap{
+    display:flex; align-items:center; justify-content:center; gap: 16px; margin-bottom: 8px;
+  }
+  .monogram{
+    position: relative;
+    width: 64px; height: 64px;
+    font-family:'Cormorant Garamond', serif;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .monogram .f1, .monogram .f2{
+    position:absolute; font-size: 46px; font-weight: 600; color: var(--gold);
+    line-height: 1;
+  }
+  .monogram .f1{ top: -4px; right: 18px; }
+  .monogram .f2{ top: 4px; right: 4px; font-style: italic; color: #E4C98A; }
+  .monogram::after{
+    content:''; position:absolute; inset:0; border: 1px solid rgba(201,164,77,0.4); border-radius: 2px;
+    transform: scale(1.18);
+  }
+  .brand-name{ font-family:'Cormorant Garamond', serif; font-size: 30px; letter-spacing: 3.5px; color: var(--cream); text-align: right; }
+  .brand-name span{ display:block; font-size: 10.5px; letter-spacing: 4px; color: var(--gold-soft); margin-top: 4px; }
+  .menu-title{
+    margin-top: 16px; font-size: 13px; letter-spacing: 2px; color: var(--gold);
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .menu-title .bean{ opacity:.6; }
+
+  /* NAV */
+  nav{
+    position: sticky; top:0; z-index: 10;
+    background: rgba(18,14,10,0.92); backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line);
+    display:flex; gap: 6px; padding: 12px 16px; overflow-x:auto;
+  }
+  nav button{
+    flex-shrink:0; background: transparent; border: 1px solid var(--line); color: var(--cream-dim);
+    padding: 8px 18px; border-radius: 999px; font-family:'Tajawal'; font-size: 13px; cursor:pointer;
+    transition: all .2s ease;
+  }
+  nav button.active{ background: var(--gold); border-color: var(--gold); color: #1a140d; font-weight:700; }
+
+  /* SECTIONS */
+  main{ max-width: 900px; margin: 0 auto; padding: 26px 16px 10px; }
+  .category{ display:none; }
+  .category.active{ display:block; animation: fade .35s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  .category-title{
+    font-size: 15px; color: var(--gold); letter-spacing: 1px; margin: 0 0 16px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--line);
+  }
+
+  .item{
+    display:flex; justify-content:space-between; align-items:center; gap: 14px;
+    padding: 14px 4px; border-bottom: 1px dashed rgba(201,164,77,0.14);
+  }
+  .item:last-child{ border-bottom:none; }
+  .item.unavailable{ opacity:.4; }
+  .item-names{ display:flex; flex-direction:column; gap:2px; }
+  .name-ar{ font-size: 15px; font-weight:500; color: var(--cream); }
+  .name-en{ font-size: 12px; color: var(--cream-dim); letter-spacing: .5px; }
+  .item-right{ display:flex; align-items:center; gap: 10px; flex-shrink:0; }
+  .price{ font-size: 14px; color: var(--gold); white-space:nowrap; font-family:'Cormorant Garamond'; font-weight:600; }
+  .out-tag{ font-size: 10px; color: var(--off); background: rgba(110,98,82,0.15); padding: 2px 8px; border-radius: 999px; }
+
+  footer{
+    text-align:center; padding: 30px 16px 10px; font-size: 11px; color: var(--gold-soft); letter-spacing:1px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-wrap">
+    <div class="brand-name">FARAH COFFEE<span>ELEGANT SPACE FOR YOU</span></div>
+    <div class="monogram">
+      <span class="f1">F</span>
+      <span class="f2">C</span>
+    </div>
+  </div>
+  <div class="menu-title"><span class="bean">۞</span> MENU | منيو <span class="bean">۞</span></div>
+</header>
+
+<nav id="catNav"></nav>
+
+<main id="menuMain"></main>
+
+<footer>0917677748 ۞ 0126977100 ۞ 0126894319</footer>
+
+<script>
+const menu = [
+  {
+    id: "hot", ar: "المشروبات الساخنة", en: "Hot Drinks",
+    items: [
+      ["قهوة سودانية","Sudanese Coffee",45,true],
+      ["قهوة فرح","Farah Coffee Special",55,true],
+      ["إسبريسو","Espresso",40,true],
+      ["امريكانو","Americano",45,true],
+      ["كابتشينو","Cappuccino",50,true],
+      ["نسكافي","Nescafe",40,true],
+      ["اوفلتين","Ovaltine",45,true],
+      ["لاتيه","Latte",50,true],
+      ["اسباني لاتيه","Spanish Latte",55,true],
+      ["كراميل لاتيه","Caramel Latte",55,true],
+      ["موكا","Mocha",55,true],
+      ["شوكولاتة ساخنة","Hot Chocolate",50,true],
+      ["قهوة تركية","Turkish Coffee",40,true],
+      ["شاي سادة","Tea",25,true],
+      ["شاي اخضر","Green Tea",30,true],
+      ["شاي لبن","Milk Tea",35,true],
+    ]
+  },
+  {
+    id: "cold", ar: "المشروبات الباردة", en: "Cold Drinks",
+    items: [
+      ["موهيتو","Mojito",50,true],
+      ["ليمون","Lemon Juice",35,true],
+      ["فراولة","Strawberry Juice",45,true],
+      ["سلاش","Slash",45,true],
+      ["ايس امريكانو","Ice Americano",50,true],
+      ["ايس موكا","Ice Mocha",60,true],
+      ["ايس كوفي","Ice Coffee",55,true],
+      ["ايس اسباني لاتيه","Ice Spanish Latte",60,true],
+      ["ايس كراميل لاتيه","Ice Caramel Latte",60,true],
+    ]
+  },
+  {
+    id: "shake", ar: "ميلك شيك", en: "Milkshake",
+    items: [
+      ["اسبريسو","Espresso Milkshake",60,true],
+      ["لوتس","Lotus Milkshake",65,true],
+      ["فراولة","Strawberry Milkshake",60,true],
+      ["اوريو","Oreo Milkshake",65,true],
+      ["كراميل","Caramel Milkshake",60,true],
+      ["شوكولاتة","Chocolate Milkshake",60,true],
+      ["فانيليا","Vanilla Milkshake",55,true],
+    ]
+  }
+];
+
+const nav = document.getElementById('catNav');
+const mainEl = document.getElementById('menuMain');
+
+menu.forEach((cat, ci) => {
+  const btn = document.createElement('button');
+  btn.textContent = cat.ar;
+  btn.className = ci === 0 ? 'active' : '';
+  btn.onclick = () => showCat(cat.id);
+  nav.appendChild(btn);
+
+  const sec = document.createElement('section');
+  sec.className = 'category' + (ci === 0 ? ' active' : '');
+  sec.id = 'cat-' + cat.id;
+  sec.innerHTML = `<h2 class="category-title">${cat.ar} <span class="en">— ${cat.en}</span></h2>` +
+    cat.items.map(it => itemRow(it[0], it[1], it[2], it[3])).join('');
+  mainEl.appendChild(sec);
+});
+
+function itemRow(ar, en, price, available){
+  return `
+  <div class="item ${available ? '' : 'unavailable'}">
+    <div class="item-names">
+      <div class="name-ar">${ar}</div>
+      <div class="name-en en">${en.toUpperCase()}</div>
+    </div>
+    <div class="item-right">
+      ${available ? `<div class="price">${price} ج.م</div>` : `<div class="out-tag">خلص النهاردة</div>`}
+    </div>
+  </div>`;
+}
+
+function showCat(id){
+  document.querySelectorAll('nav button').forEach((b,i) => b.classList.toggle('active', menu[i].id === id));
+  document.querySelectorAll('.category').forEach(s => s.classList.toggle('active', s.id === 'cat-' + id));
+}
+</script>
+</body>
+</html>
