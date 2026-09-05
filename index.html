@@ -35,23 +35,20 @@
     border-bottom: 1px solid var(--line);
   }
   .logo-wrap{
-    display:flex; align-items:center; justify-content:center; gap: 16px; margin-bottom: 8px;
+    display:flex; align-items:center; justify-content:center; gap: 18px; margin-bottom: 8px;
   }
   .monogram{
     position: relative;
-    width: 64px; height: 64px;
+    width: 70px; height: 70px;
     font-family:'Cormorant Garamond', serif;
-    display:flex; align-items:center; justify-content:center;
   }
-  .monogram .f1, .monogram .f2{
-    position:absolute; font-size: 46px; font-weight: 600; color: var(--gold);
+  .monogram .letter-c{
+    position:absolute; top: 13px; left: 7px; font-size: 38px; font-weight: 600; color: #CFA355;
+    line-height: 1; clip-path: inset(0 0 0 42%);
+  }
+  .monogram .letter-f{
+    position:absolute; top: 0px; left: 0px; font-size: 61px; font-weight: 700; color: #DDB05E;
     line-height: 1;
-  }
-  .monogram .f1{ top: -4px; right: 18px; }
-  .monogram .f2{ top: 4px; right: 4px; font-style: italic; color: #E4C98A; }
-  .monogram::after{
-    content:''; position:absolute; inset:0; border: 1px solid rgba(201,164,77,0.4); border-radius: 2px;
-    transform: scale(1.18);
   }
   .brand-name{ font-family:'Cormorant Garamond', serif; font-size: 30px; letter-spacing: 3.5px; color: var(--cream); text-align: right; }
   .brand-name span{ display:block; font-size: 10.5px; letter-spacing: 4px; color: var(--gold-soft); margin-top: 4px; }
@@ -110,8 +107,8 @@
   <div class="logo-wrap">
     <div class="brand-name">FARAH COFFEE<span>ELEGANT SPACE FOR YOU</span></div>
     <div class="monogram">
-      <span class="f1">F</span>
-      <span class="f2">C</span>
+      <span class="letter-c">C</span>
+      <span class="letter-f">F</span>
     </div>
   </div>
   <div class="menu-title"><span class="bean">۞</span> MENU | منيو <span class="bean">۞</span></div>

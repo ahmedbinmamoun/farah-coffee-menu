@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg: #120E0A; --surface: #1C1610; --surface-2: #241C13;
@@ -29,6 +30,7 @@
   header h1{ font-size: 18px; margin:0; color: var(--cream); }
   header h1 span{ display:block; font-size: 11px; color: var(--gold-soft); font-weight:400; margin-top:4px; letter-spacing:1px; }
   .badge{ background: var(--surface); border:1px solid var(--line); color: var(--gold); font-size:12px; padding:6px 12px; border-radius: 999px; }
+  .badge.live{ color: var(--success); border-color: rgba(127,166,107,0.4); }
 
   main{ max-width: 900px; margin: 0 auto; padding: 24px 16px; }
 
@@ -55,6 +57,21 @@
   .name-ar{ font-size: 14px; color: var(--cream); }
   .name-en{ font-size: 11px; color: var(--cream-dim); }
   .item-controls{ display:flex; align-items:center; gap: 12px; flex-shrink:0; }
+
+  .price-input{
+    width: 68px; background: var(--surface-2); border: 1px solid var(--line); color: var(--gold);
+    border-radius: 7px; padding: 7px 6px; font-family:'Cormorant Garamond'; font-size:15px; text-align:center; font-weight:600;
+  }
+  .avail-toggle{
+    width: 34px; height: 20px; border-radius: 999px; background: var(--off); position:relative; cursor:pointer; border: none; padding:0;
+  }
+  .avail-toggle.on{ background: var(--success); }
+  .avail-toggle::after{
+    content:''; position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%; background:#fff;
+    transition: transform .2s ease;
+  }
+  .avail-toggle.on::after{ transform: translateX(-14px); }
+
   .delete-btn{
     background: transparent; border: 1px solid rgba(201,164,77,0.3); color: var(--gold-soft);
     width: 26px; height: 26px; border-radius: 6px; cursor:pointer; font-size: 14px; line-height:1;
@@ -84,36 +101,67 @@
     font-family:'Tajawal'; font-size:12.5px; font-weight:700; cursor:pointer;
   }
 
-  .price-input{
-    width: 68px; background: var(--surface-2); border: 1px solid var(--line); color: var(--gold);
-    border-radius: 7px; padding: 7px 6px; font-family:'Cormorant Garamond'; font-size:15px; text-align:center; font-weight:600;
-  }
-  .avail-toggle{
-    width: 34px; height: 20px; border-radius: 999px; background: var(--off); position:relative; cursor:pointer; border: none; padding:0;
-  }
-  .avail-toggle.on{ background: var(--success); }
-  .avail-toggle::after{
-    content:''; position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%; background:#fff;
-    transition: transform .2s ease;
-  }
-  .avail-toggle.on::after{ transform: translateX(-14px); }
+  .state-msg{ text-align:center; padding: 40px 20px; color: var(--gold-soft); font-size: 13px; }
 
-  .save-bar{
-    position: sticky; bottom: 0; margin-top: 20px; background: rgba(15,12,8,0.95); backdrop-filter: blur(6px);
-    border-top: 1px solid var(--line); padding: 14px 16px; display:flex; justify-content:flex-end; gap:10px;
+  /* LOGIN SCREEN */
+  .login-screen{
+    min-height: 100vh; display:flex; align-items:center; justify-content:center; padding: 20px;
   }
-  .save-bar button{
-    background: var(--gold); color:#1a140d; border:none; padding: 10px 22px; border-radius:8px;
-    font-family:'Tajawal'; font-size:13px; font-weight:700; cursor:pointer;
+  .login-box{
+    width: 100%; max-width: 340px; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 30px 26px;
   }
-  .save-note{ align-self:center; font-size:12px; color: var(--gold-soft); margin-left:auto; }
+  .login-box h2{ margin: 0 0 4px; font-size: 17px; text-align:center; }
+  .login-box .sub{ font-size: 12px; color: var(--gold-soft); text-align:center; margin-bottom: 22px; }
+  .login-box label{ font-size: 12px; color: var(--cream-dim); display:block; margin: 0 0 6px; }
+  .login-box input{
+    width:100%; background: var(--surface-2); border: 1px solid var(--line); color: var(--cream);
+    border-radius: 8px; padding: 10px 12px; font-family:'Tajawal'; font-size: 13px; margin-bottom: 14px;
+  }
+  .login-box button{
+    width:100%; background: var(--gold); color:#1a140d; border:none; padding: 11px; border-radius:8px;
+    font-family:'Tajawal'; font-size:13.5px; font-weight:700; cursor:pointer; margin-top: 6px;
+  }
+  .login-error{ color:#d98a80; font-size:12px; text-align:center; margin-top:12px; display:none; }
+  .login-error.show{ display:block; }
+  .app-hidden{ display:none !important; }
+  .logout-btn{
+    background: transparent; border: 1px solid var(--line); color: var(--cream-dim);
+    padding: 6px 12px; border-radius: 999px; font-family:'Tajawal'; font-size: 11.5px; cursor:pointer;
+  }
+
+  .toast{
+    position: fixed; bottom: 20px; left:50%; transform: translateX(-50%);
+    background:#1C1610; border:1px solid var(--gold); color:var(--gold); font-size:12.5px;
+    padding: 10px 18px; border-radius: 999px; opacity:0; pointer-events:none; transition: opacity .25s ease;
+  }
+  .toast.show{ opacity:1; }
 </style>
 </head>
 <body>
 
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <h2>لوحة تحكم المنيو</h2>
+    <div class="sub">Farah Coffee — تسجيل الدخول</div>
+    <label>البريد الإلكتروني</label>
+    <input type="email" id="loginEmail" placeholder="admin@example.com" autocomplete="username">
+    <label>كلمة المرور</label>
+    <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+    <button onclick="doLogin()">دخول</button>
+    <div class="login-error" id="loginError">البريد أو كلمة المرور غلط</div>
+  </div>
+</div>
+
+<!-- ADMIN APP (hidden until logged in) -->
+<div id="adminApp" class="app-hidden">
 <header>
   <h1>لوحة تحكم المنيو <span>Farah Coffee — Admin</span></h1>
-  <div class="badge">وضع صاحب المحل</div>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <div class="badge live" id="statusBadge">جاري الاتصال...</div>
+    <button class="logout-btn" onclick="doLogout()">خروج</button>
+  </div>
 </header>
 
 <main>
@@ -121,123 +169,226 @@
     <div class="qr-box" id="qrcode"></div>
     <div>
       <h3>باركود المنيو (اطبعه على الترابيزات)</h3>
-      <p>ده الباركود الثابت اللي بيوجه الزبون لصفحة المنيو العامة. مش محتاج تغيّره أبدًا — أي تعديل تعمله هنا بيظهر تلقائي للزبون لما يعمل سكان.</p>
+      <p>ده الباركود الثابت اللي بيوجه الزبون لصفحة المنيو العامة. مش محتاج تغيّره أبدًا — أي تعديل تعمله هنا بيتخزن فعليًا ويظهر فورًا للزبون لما يعمل سكان.</p>
     </div>
   </div>
 
-  <div id="categories"></div>
-
-  <div class="save-bar">
-    <span class="save-note" id="saveNote"></span>
-    <button onclick="saveChanges()">حفظ التعديلات</button>
+  <div id="categories">
+    <div class="state-msg">جاري تحميل الأصناف...</div>
   </div>
 </main>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-const menu = [
-  { id:"hot", ar:"المشروبات الساخنة", en:"Hot Drinks", items:[
-    ["قهوة سودانية","Sudanese Coffee",45,true],["قهوة فرح","Farah Coffee Special",55,true],
-    ["إسبريسو","Espresso",40,true],["امريكانو","Americano",45,true],["كابتشينو","Cappuccino",50,true],
-    ["نسكافي","Nescafe",40,true],["اوفلتين","Ovaltine",45,true],["لاتيه","Latte",50,true],
-    ["اسباني لاتيه","Spanish Latte",55,true],["كراميل لاتيه","Caramel Latte",55,true],["موكا","Mocha",55,true],
-    ["شوكولاتة ساخنة","Hot Chocolate",50,true],["قهوة تركية","Turkish Coffee",40,true],
-    ["شاي سادة","Tea",25,true],["شاي اخضر","Green Tea",30,true],["شاي لبن","Milk Tea",35,true],
-  ]},
-  { id:"cold", ar:"المشروبات الباردة", en:"Cold Drinks", items:[
-    ["موهيتو","Mojito",50,true],["ليمون","Lemon Juice",35,true],["فراولة","Strawberry Juice",45,true],
-    ["سلاش","Slash",45,true],["ايس امريكانو","Ice Americano",50,true],["ايس موكا","Ice Mocha",60,true],
-    ["ايس كوفي","Ice Coffee",55,true],["ايس اسباني لاتيه","Ice Spanish Latte",60,true],["ايس كراميل لاتيه","Ice Caramel Latte",60,true],
-  ]},
-  { id:"shake", ar:"ميلك شيك", en:"Milkshake", items:[
-    ["اسبريسو","Espresso Milkshake",60,true],["لوتس","Lotus Milkshake",65,true],["فراولة","Strawberry Milkshake",60,true],
-    ["اوريو","Oreo Milkshake",65,true],["كراميل","Caramel Milkshake",60,true],["شوكولاتة","Chocolate Milkshake",60,true],
-    ["فانيليا","Vanilla Milkshake",55,true],
-  ]}
-];
+// ---- Supabase connection ----
+const SUPABASE_URL = 'https://omyucnjkqeyomtvijqwc.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9teXVjbmprcWV5b210dmlqcXdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1NTQ0NDUsImV4cCI6MjEwNDEzMDQ0NX0.jc8WAbBIpMCDzdLCf3RYk9ruLbInBJ7unmnr2u1SEkA';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const CATEGORY_LABELS = {
+  hot:   { ar: 'المشروبات الساخنة', en: 'Hot Drinks' },
+  cold:  { ar: 'المشروبات الباردة', en: 'Cold Drinks' },
+  shake: { ar: 'ميلك شيك',          en: 'Milkshake' },
+};
+const CATEGORY_ORDER = ['hot', 'cold', 'shake'];
 
 const wrap = document.getElementById('categories');
-let itemCounter = 0;
+const statusBadge = document.getElementById('statusBadge');
+const toastEl = document.getElementById('toast');
+const loginScreen = document.getElementById('loginScreen');
+const adminApp = document.getElementById('adminApp');
+const loginError = document.getElementById('loginError');
+let itemsCache = [];
+let realtimeChannel = null;
 
-menu.forEach(cat => {
-  const block = document.createElement('div');
-  block.className = 'category-block';
-  block.id = 'block-' + cat.id;
-  block.innerHTML = `<h2 class="category-title">${cat.ar} <span class="en">— ${cat.en}</span></h2>` +
-    `<div class="items-list" id="list-${cat.id}">` +
-    cat.items.map(it => itemRow(cat.id, it[0], it[1], it[2], it[3])).join('') +
-    `</div>` +
-    `<button class="add-item-btn" onclick="showAddForm('${cat.id}')">+ إضافة صنف جديد في ${cat.ar}</button>` +
-    `<div class="add-form" id="form-${cat.id}">
-      <input class="name-field" id="new-ar-${cat.id}" placeholder="اسم الصنف بالعربي">
-      <input class="name-field" id="new-en-${cat.id}" placeholder="Item name (English)">
-      <input class="price-field" id="new-price-${cat.id}" type="number" placeholder="السعر">
-      <button onclick="addItem('${cat.id}')">إضافة</button>
+// ---- Auth gate ----
+async function checkSession(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(session){
+    enterApp();
+  }else{
+    loginScreen.classList.remove('app-hidden');
+    adminApp.classList.add('app-hidden');
+  }
+}
+
+async function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  loginError.classList.remove('show');
+
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){
+    loginError.textContent = 'البريد أو كلمة المرور غلط';
+    loginError.classList.add('show');
+    return;
+  }
+  enterApp();
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  if(realtimeChannel) sb.removeChannel(realtimeChannel);
+  loginScreen.classList.remove('app-hidden');
+  adminApp.classList.add('app-hidden');
+  document.getElementById('loginPassword').value = '';
+}
+
+function enterApp(){
+  loginScreen.classList.add('app-hidden');
+  adminApp.classList.remove('app-hidden');
+  loadItems();
+  if(!realtimeChannel){
+    realtimeChannel = sb.channel('public:items:admin')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, () => {
+        loadItems();
+      })
+      .subscribe();
+  }
+  const menuUrl = window.location.href.replace(/admin\.html.*$/, 'index.html');
+  document.getElementById('qrcode').innerHTML = '';
+  new QRCode(document.getElementById("qrcode"), {
+    text: menuUrl, width: 74, height: 74, colorDark: "#120E0A", colorLight: "#ffffff",
+  });
+}
+
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastEl._t);
+  toastEl._t = setTimeout(() => toastEl.classList.remove('show'), 1800);
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+async function loadItems(){
+  const { data, error } = await sb
+    .from('items')
+    .select('*')
+    .order('category', { ascending: true })
+    .order('sort_order', { ascending: true });
+
+  if(error){
+    wrap.innerHTML = `<div class="state-msg">تعذّر تحميل الأصناف — تأكد من اتصال الإنترنت وحاول تاني.</div>`;
+    statusBadge.textContent = 'غير متصل';
+    statusBadge.classList.remove('live');
+    console.error(error);
+    return;
+  }
+
+  itemsCache = data || [];
+  statusBadge.textContent = 'متصل ومتزامن مباشرة';
+  render();
+}
+
+function render(){
+  const groups = {};
+  itemsCache.forEach(it => {
+    if(!groups[it.category]) groups[it.category] = [];
+    groups[it.category].push(it);
+  });
+
+  wrap.innerHTML = CATEGORY_ORDER.map(catKey => {
+    const list = groups[catKey] || [];
+    return `
+    <div class="category-block">
+      <h2 class="category-title">${CATEGORY_LABELS[catKey].ar} <span class="en">— ${CATEGORY_LABELS[catKey].en}</span></h2>
+      <div class="items-list">
+        ${list.map(itemRow).join('') || '<div style="font-size:12px;color:var(--gold-soft);padding:8px 0;">مفيش أصناف في القسم ده لسه</div>'}
+      </div>
+      <button class="add-item-btn" onclick="showAddForm('${catKey}')">+ إضافة صنف جديد في ${CATEGORY_LABELS[catKey].ar}</button>
+      <div class="add-form" id="form-${catKey}">
+        <input class="name-field" id="new-ar-${catKey}" placeholder="اسم الصنف بالعربي">
+        <input class="name-field" id="new-en-${catKey}" placeholder="Item name (English)">
+        <input class="price-field" id="new-price-${catKey}" type="number" placeholder="السعر">
+        <button onclick="addItem('${catKey}')">إضافة</button>
+      </div>
     </div>`;
-  wrap.appendChild(block);
-});
+  }).join('');
+}
 
-function itemRow(catId, ar, en, price, available){
-  const uid = catId + '-' + (itemCounter++);
+function itemRow(it){
   return `
-  <div class="item ${available ? '' : 'unavailable'}" id="item-${uid}">
+  <div class="item ${it.available ? '' : 'unavailable'}" id="item-${it.id}">
     <div class="item-names">
-      <div class="name-ar">${ar}</div>
-      <div class="name-en en">${en.toUpperCase()}</div>
+      <div class="name-ar">${escapeHtml(it.name_ar)}</div>
+      <div class="name-en en">${escapeHtml((it.name_en || '').toUpperCase())}</div>
     </div>
     <div class="item-controls">
-      <input class="price-input" type="number" value="${price}">
-      <button class="avail-toggle ${available ? 'on' : ''}" onclick="toggleAvail('${uid}', this)"></button>
-      <button class="delete-btn" title="حذف الصنف" onclick="deleteItem('${uid}')">✕</button>
+      <input class="price-input" type="number" value="${it.price}" onchange="updatePrice(${it.id}, this.value)">
+      <button class="avail-toggle ${it.available ? 'on' : ''}" onclick="toggleAvail(${it.id}, this)"></button>
+      <button class="delete-btn" title="حذف الصنف" onclick="deleteItem(${it.id})">✕</button>
     </div>
   </div>`;
 }
 
-function toggleAvail(uid, btn){
-  btn.classList.toggle('on');
-  document.getElementById('item-' + uid).classList.toggle('unavailable', !btn.classList.contains('on'));
+async function updatePrice(id, value){
+  const price = Number(value);
+  if(isNaN(price) || price < 0){ toast('السعر غير صحيح'); return; }
+  const { error } = await sb.from('items').update({ price }).eq('id', id);
+  if(error){ toast('حصل خطأ في الحفظ'); console.error(error); return; }
+  toast('✓ اتحفظ السعر');
 }
 
-function deleteItem(uid){
-  const row = document.getElementById('item-' + uid);
-  if(confirm('متأكد إنك عايز تحذف الصنف ده؟')){
-    row.remove();
-  }
+async function toggleAvail(id, btn){
+  const newVal = !btn.classList.contains('on');
+  const { error } = await sb.from('items').update({ available: newVal }).eq('id', id);
+  if(error){ toast('حصل خطأ في الحفظ'); console.error(error); return; }
+  btn.classList.toggle('on', newVal);
+  document.getElementById('item-' + id).classList.toggle('unavailable', !newVal);
+  toast(newVal ? '✓ الصنف بقى متاح' : '✓ الصنف اتوقف مؤقتًا');
 }
 
-function showAddForm(catId){
-  document.getElementById('form-' + catId).classList.toggle('show');
+async function deleteItem(id){
+  if(!confirm('متأكد إنك عايز تحذف الصنف ده؟')) return;
+  const { error } = await sb.from('items').delete().eq('id', id);
+  if(error){ toast('حصل خطأ في الحذف'); console.error(error); return; }
+  toast('✓ اتحذف الصنف');
 }
 
-function addItem(catId){
-  const arInput = document.getElementById('new-ar-' + catId);
-  const enInput = document.getElementById('new-en-' + catId);
-  const priceInput = document.getElementById('new-price-' + catId);
-  const ar = arInput.value.trim();
-  const en = enInput.value.trim();
-  const price = priceInput.value;
+function showAddForm(catKey){
+  document.getElementById('form-' + catKey).classList.toggle('show');
+}
 
-  if(!ar || !price){
+async function addItem(catKey){
+  const arInput = document.getElementById('new-ar-' + catKey);
+  const enInput = document.getElementById('new-en-' + catKey);
+  const priceInput = document.getElementById('new-price-' + catKey);
+  const name_ar = arInput.value.trim();
+  const name_en = enInput.value.trim();
+  const price = Number(priceInput.value);
+
+  if(!name_ar || !price){
     alert('لازم تكتب اسم الصنف بالعربي والسعر على الأقل');
     return;
   }
 
-  const list = document.getElementById('list-' + catId);
-  list.insertAdjacentHTML('beforeend', itemRow(catId, ar, en || ar, price, true));
+  const sameCatItems = itemsCache.filter(it => it.category === catKey);
+  const nextSort = sameCatItems.length ? Math.max(...sameCatItems.map(it => it.sort_order || 0)) + 1 : 1;
+
+  const { error } = await sb.from('items').insert({
+    category: catKey, name_ar, name_en: name_en || name_ar, price, available: true, sort_order: nextSort
+  });
+
+  if(error){ toast('حصل خطأ في الإضافة'); console.error(error); return; }
 
   arInput.value = ''; enInput.value = ''; priceInput.value = '';
-  document.getElementById('form-' + catId).classList.remove('show');
+  document.getElementById('form-' + catKey).classList.remove('show');
+  toast('✓ اتضاف الصنف');
 }
 
-function saveChanges(){
-  // في النسخة الحقيقية: هنا بيتبعت الطلب لـ Laravel API ويتحفظ في الداتابيز
-  document.getElementById('saveNote').textContent = '✓ اتحفظ (ديمو فقط — النسخة الحقيقية بتتصل بالسيرفر)';
-}
+// Start: check if already logged in
+checkSession();
 
-// QR pointing to the public menu page (index.html) next to this file
-const menuUrl = window.location.href.replace(/admin\.html.*$/, 'index.html');
-new QRCode(document.getElementById("qrcode"), {
-  text: menuUrl, width: 74, height: 74, colorDark: "#120E0A", colorLight: "#ffffff",
+// Allow pressing Enter in the password field to log in
+document.getElementById('loginPassword').addEventListener('keydown', e => {
+  if(e.key === 'Enter') doLogin();
 });
+
 </script>
 </body>
 </html>
