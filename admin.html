@@ -53,9 +53,25 @@
   }
   .item:last-child{ border-bottom:none; }
   .item.unavailable .item-names{ opacity:.4; }
+  .item-thumb{
+    width: 52px; height: 52px; border-radius: 8px; overflow:hidden; flex-shrink:0;
+    background: var(--surface-2); border: 1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; position:relative; cursor:pointer;
+  }
+  .item-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .item-thumb input[type=file]{ position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .item-thumb .upload-overlay{
+    position:absolute; inset:0; background:rgba(0,0,0,0.55); color:var(--gold);
+    display:flex; align-items:center; justify-content:center; font-size:16px; opacity:0; transition:opacity .2s;
+  }
+  .item-thumb:hover .upload-overlay{ opacity:1; }
+  .item-thumb.uploading .upload-overlay{ opacity:1; }
+  .thumb-empty{ font-size: 8.5px; color: var(--gold-soft); text-align:center; line-height:1.3; padding: 0 4px; }
+  .item-main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
   .item-names{ display:flex; flex-direction:column; gap:2px; }
   .name-ar{ font-size: 14px; color: var(--cream); }
   .name-en{ font-size: 11px; color: var(--cream-dim); }
+  .photo-hint{ font-size: 10px; color: var(--gold-soft); }
   .item-controls{ display:flex; align-items:center; gap: 12px; flex-shrink:0; }
 
   .price-input{
@@ -305,6 +321,10 @@ function render(){
         <input class="name-field" id="new-ar-${catKey}" placeholder="اسم الصنف بالعربي">
         <input class="name-field" id="new-en-${catKey}" placeholder="Item name (English)">
         <input class="price-field" id="new-price-${catKey}" type="number" placeholder="السعر">
+        <label class="name-field" style="flex:1 1 100%; background:var(--surface-2); border:1px solid var(--line); border-radius:6px; padding:8px 10px; font-size:12px; color:var(--gold-soft); cursor:pointer; display:flex; align-items:center; gap:6px;">
+          📷 <span id="new-img-label-${catKey}">اختياري: اضغط لرفع صورة الصنف</span>
+          <input type="file" accept="image/*" id="new-img-${catKey}" style="display:none;" onchange="document.getElementById('new-img-label-${catKey}').textContent = this.files[0] ? this.files[0].name : 'اختياري: اضغط لرفع صورة الصنف'">
+        </label>
         <button onclick="addItem('${catKey}')">إضافة</button>
       </div>
     </div>`;
@@ -314,9 +334,17 @@ function render(){
 function itemRow(it){
   return `
   <div class="item ${it.available ? '' : 'unavailable'}" id="item-${it.id}">
-    <div class="item-names">
-      <div class="name-ar">${escapeHtml(it.name_ar)}</div>
-      <div class="name-en en">${escapeHtml((it.name_en || '').toUpperCase())}</div>
+    <div class="item-thumb" id="thumb-${it.id}">
+      ${it.image_url ? `<img src="${escapeAttr(it.image_url)}" alt="">` : `<div class="thumb-empty">لا توجد صورة</div>`}
+      <div class="upload-overlay">📷</div>
+      <input type="file" accept="image/*" onchange="uploadImage(${it.id}, this.files[0])">
+    </div>
+    <div class="item-main">
+      <div class="item-names">
+        <div class="name-ar">${escapeHtml(it.name_ar)}</div>
+        <div class="name-en en">${escapeHtml((it.name_en || '').toUpperCase())}</div>
+      </div>
+      <div class="photo-hint">دوس على الصورة لرفع/تغيير صورة الصنف</div>
     </div>
     <div class="item-controls">
       <input class="price-input" type="number" value="${it.price}" onchange="updatePrice(${it.id}, this.value)">
@@ -324,6 +352,45 @@ function itemRow(it){
       <button class="delete-btn" title="حذف الصنف" onclick="deleteItem(${it.id})">✕</button>
     </div>
   </div>`;
+}
+
+function escapeAttr(str){
+  return escapeHtml(str).replace(/`/g, '&#96;');
+}
+
+async function uploadImage(id, file){
+  if(!file) return;
+  const thumbEl = document.getElementById('thumb-' + id);
+  thumbEl.classList.add('uploading');
+
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `items/${id}-${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await sb.storage.from('menu-images').upload(path, file, {
+    upsert: true,
+    contentType: file.type || 'image/jpeg'
+  });
+
+  if(uploadError){
+    thumbEl.classList.remove('uploading');
+    toast('حصل خطأ في رفع الصورة');
+    console.error(uploadError);
+    return;
+  }
+
+  const { data: urlData } = sb.storage.from('menu-images').getPublicUrl(path);
+  const image_url = urlData.publicUrl;
+
+  const { error: dbError } = await sb.from('items').update({ image_url }).eq('id', id);
+  thumbEl.classList.remove('uploading');
+
+  if(dbError){
+    toast('اتحفظت الصورة بس حصل خطأ في تحديث الصنف');
+    console.error(dbError);
+    return;
+  }
+
+  toast('✓ اتحفظت الصورة');
 }
 
 async function updatePrice(id, value){
@@ -358,9 +425,11 @@ async function addItem(catKey){
   const arInput = document.getElementById('new-ar-' + catKey);
   const enInput = document.getElementById('new-en-' + catKey);
   const priceInput = document.getElementById('new-price-' + catKey);
+  const imgInput = document.getElementById('new-img-' + catKey);
   const name_ar = arInput.value.trim();
   const name_en = enInput.value.trim();
   const price = Number(priceInput.value);
+  const file = imgInput.files[0] || null;
 
   if(!name_ar || !price){
     alert('لازم تكتب اسم الصنف بالعربي والسعر على الأقل');
@@ -370,13 +439,30 @@ async function addItem(catKey){
   const sameCatItems = itemsCache.filter(it => it.category === catKey);
   const nextSort = sameCatItems.length ? Math.max(...sameCatItems.map(it => it.sort_order || 0)) + 1 : 1;
 
-  const { error } = await sb.from('items').insert({
+  const { data: inserted, error } = await sb.from('items').insert({
     category: catKey, name_ar, name_en: name_en || name_ar, price, available: true, sort_order: nextSort
-  });
+  }).select().single();
 
   if(error){ toast('حصل خطأ في الإضافة'); console.error(error); return; }
 
-  arInput.value = ''; enInput.value = ''; priceInput.value = '';
+  // If a photo was chosen, upload it now and attach it to the item we just created
+  if(file && inserted){
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `items/${inserted.id}-${Date.now()}.${ext}`;
+    const { error: uploadError } = await sb.storage.from('menu-images').upload(path, file, {
+      upsert: true, contentType: file.type || 'image/jpeg'
+    });
+    if(!uploadError){
+      const { data: urlData } = sb.storage.from('menu-images').getPublicUrl(path);
+      await sb.from('items').update({ image_url: urlData.publicUrl }).eq('id', inserted.id);
+    }else{
+      console.error(uploadError);
+      toast('اتضاف الصنف لكن حصل خطأ في رفع الصورة');
+    }
+  }
+
+  arInput.value = ''; enInput.value = ''; priceInput.value = ''; imgInput.value = '';
+  document.getElementById('new-img-label-' + catKey).textContent = 'اختياري: اضغط لرفع صورة الصنف';
   document.getElementById('form-' + catKey).classList.remove('show');
   toast('✓ اتضاف الصنف');
 }
