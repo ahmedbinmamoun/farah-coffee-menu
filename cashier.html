@@ -159,9 +159,9 @@
 <!-- APP -->
 <div id="app" class="hidden">
   <header>
-    <div class="who"><span id="adminTag"></span>شغّال دلوقتي: <b id="whoName"></b></div>
+    <div class="who"><span id="adminTag"></span>شغّال حاليا: <b id="whoName"></b></div>
     <div class="header-actions">
-      <button class="pill-btn" onclick="openInvoices()">فواتير النهاردة</button>
+      <button class="pill-btn" onclick="openInvoices()">فواتير الليلة</button>
       <button class="pill-btn" onclick="openReport()">تقرير اليوم</button>
       <button class="pill-btn hidden" id="manageEmpBtn" onclick="openManageEmployees()">الموظفين</button>
       <button class="pill-btn danger" onclick="doLogout()">إنهاء الشيفت</button>
@@ -179,7 +179,7 @@
   <div class="cart-bar" id="cartBar">
     <div class="cart-summary" onclick="toggleCart()">
       <span class="count" id="cartCount">السلة فاضية</span>
-      <span class="total" id="cartTotalTop">0 ج.م</span>
+      <span class="total" id="cartTotalTop">0 ج</span>
     </div>
     <div class="cart-list" id="cartList"></div>
     <div class="cart-actions">
@@ -302,7 +302,7 @@ function renderCats(){
 
   const grid = document.getElementById('itemsGrid');
   const list = groups[currentCat] || [];
-  grid.innerHTML = list.map(it => itemCardHtml(it)).join('') || '<div class="state-msg">مفيش أصناف متاحة في القسم ده</div>';
+  grid.innerHTML = list.map(it => itemCardHtml(it)).join('') || '<div class="state-msg">مافي أصناف متاحة في القسم ده</div>';
 }
 
 function qtyInCart(name_ar, price){
@@ -356,7 +356,7 @@ function renderCart(){
 
   const totalQty = cart.reduce((s,c)=>s+c.qty,0);
   countEl.textContent = totalQty ? `${totalQty} صنف في السلة` : 'السلة فاضية';
-  totalEl.textContent = cartTotal() + ' ج.م';
+  totalEl.textContent = cartTotal() + ' ج';
   checkoutBtn.disabled = cart.length === 0;
 
   listEl.innerHTML = cart.map((c,i) => `
@@ -404,7 +404,7 @@ function openPaymentModal(){
     <div class="modal-overlay">
       <div class="modal-box">
         <h3>طريقة الدفع</h3>
-        <div class="modal-total">${total} ج.م</div>
+        <div class="modal-total">${total} ج</div>
         <div class="pay-options">
           <button id="payCash" onclick="selectPayment('cash')">💵 كاش</button>
           <button id="payCard" onclick="selectPayment('card')">💳 بنكك</button>
@@ -443,7 +443,7 @@ function confirmSale(){
   renderCats();
   document.getElementById('cartBar').classList.remove('open');
   closeModal();
-  alert(`تم البيع — فاتورة رقم ${invoice.number} بقيمة ${invoice.total} ج.م`);
+  alert(`تم البيع — فاتورة رقم ${invoice.number} بقيمة ${invoice.total} ج`);
 }
 
 function closeModal(){ document.getElementById('modalRoot').innerHTML = ''; }
@@ -458,14 +458,14 @@ function openInvoices(){
   document.getElementById('modalRoot').innerHTML = `
     <div class="modal-overlay">
       <div class="modal-box">
-        <h3>فواتير النهاردة (${invoices.length})</h3>
+        <h3>فواتير الليلة (${invoices.length})</h3>
         ${invoices.map(inv => `
           <div class="invoice-item ${inv.status === 'cancelled' ? 'cancelled' : ''}">
             <div class="top-row"><span>فاتورة #${inv.number}</span><span>${inv.total} ج.م</span></div>
             <div class="meta">${escapeHtml(inv.employee)} — <span class="en">${inv.time}</span> — ${inv.payment==='cash'?'كاش':'بنكك'}${inv.status==='cancelled' ? ' — ملغاة' : ''}</div>
             ${inv.status !== 'cancelled' ? `<button class="void-btn" onclick="voidInvoicePrompt('${inv.id}')">إلغاء الفاتورة</button>` : ''}
           </div>
-        `).join('') || '<div class="state-msg">مفيش فواتير النهاردة لسه</div>'}
+        `).join('') || '<div class="state-msg">لسه ماف فواتير الليلة</div>'}
         <button class="close-btn" onclick="closeModal()">قفل</button>
       </div>
     </div>`;
@@ -529,9 +529,9 @@ function openReport(){
           <h3>تقريرك اليوم — <span class="en">${today}</span></h3>
           <table class="report-table">
             <tr><td>عدد الفواتير</td><td>${mine.count}</td></tr>
-            <tr><td>كاش</td><td>${mine.cash} ج.م</td></tr>
-            <tr><td>بنكك</td><td>${mine.card} ج.م</td></tr>
-            <tr><td>الإجمالي</td><td>${mine.total} ج.م</td></tr>
+            <tr><td>كاش</td><td>${mine.cash} ج</td></tr>
+            <tr><td>بنكك</td><td>${mine.card} ج</td></tr>
+            <tr><td>الإجمالي</td><td>${mine.total} ج</td></tr>
           </table>
           <button class="close-btn" onclick="closeModal()">قفل</button>
         </div>
@@ -541,7 +541,7 @@ function openReport(){
 
   const rows = Object.entries(agg.byEmployee).map(([name, e]) => `
     <tr><td>${escapeHtml(name)}</td><td>${e.count}</td><td>${e.cash}</td><td>${e.card}</td><td>${e.total}</td></tr>
-  `).join('') || `<tr><td colspan="5">مفيش مبيعات النهاردة لسه</td></tr>`;
+  `).join('') || `<tr><td colspan="5">لسه ماف مبيعات الليلة</td></tr>`;
 
   document.getElementById('modalRoot').innerHTML = `
     <div class="modal-overlay">
@@ -617,7 +617,7 @@ async function sendReportToTelegram(dateStr){
     if(!res.ok || json.error){
       throw new Error(json.error || 'فشل الإرسال');
     }
-    btn.textContent = '✓ اتبعت لتليجرام';
+    btn.textContent = '✓ اترسل للتليجرام';
   }catch(err){
     console.error(err);
     btn.textContent = 'حصل خطأ، جرب تاني';
