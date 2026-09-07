@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <style>
   :root{
     --bg:#100C09; --surface:#1C1610; --surface-2:#241C13;
@@ -22,7 +23,6 @@
   .en{ font-family:'Cormorant Garamond', serif; direction:ltr; }
   button{ font-family:'Tajawal', sans-serif; cursor:pointer; }
   input{ font-family:'Tajawal', sans-serif; }
-
   .hidden{ display:none !important; }
 
   /* ---------- LOGIN ---------- */
@@ -30,7 +30,7 @@
   .login-box{ width:100%; max-width:360px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:30px 26px; }
   .login-box h2{ margin:0 0 4px; font-size:18px; text-align:center; }
   .login-box .sub{ font-size:12px; color:var(--gold-soft); text-align:center; margin-bottom:22px; }
-  .emp-grid{ display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+  .emp-grid{ display:flex; flex-direction:column; gap:10px; margin-bottom:16px; max-height: 220px; overflow-y:auto; }
   .emp-btn{
     background:var(--surface-2); border:1px solid var(--line); color:var(--cream);
     padding:12px; border-radius:10px; font-size:14px; text-align:center;
@@ -46,6 +46,7 @@
   }
   .login-error{ color:#d98a80; font-size:12px; text-align:center; margin-top:12px; display:none; }
   .login-error.show{ display:block; }
+  .state-msg{ text-align:center; padding: 20px; color: var(--gold-soft); font-size: 13px; grid-column: 1/-1; }
 
   /* ---------- APP ---------- */
   header{
@@ -55,6 +56,7 @@
   }
   header .who{ font-size:14px; }
   header .who b{ color:var(--gold); }
+  header .who .admin-tag{ font-size:10px; color:#1a140d; background:var(--gold); padding:2px 8px; border-radius:999px; margin-right:6px; }
   .header-actions{ display:flex; gap:8px; flex-wrap:wrap; }
   .pill-btn{
     background:var(--surface); border:1px solid var(--line); color:var(--cream-dim);
@@ -74,40 +76,34 @@
 
   main{ max-width: 720px; margin:0 auto; padding: 16px 14px 220px; }
   .items-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-  .item-btn{
+  .item-card{
     background:var(--surface); border:1px solid var(--line); border-radius:12px;
-    padding:12px; text-align:right; display:flex; flex-direction:column; gap:4px;
+    padding:12px; display:flex; flex-direction:column; gap:8px;
   }
-  .item-btn:active{ border-color:var(--gold); }
-  .item-btn .nm{ font-size:13.5px; color:var(--cream); }
-  .item-btn .pr{ font-size:14px; color:var(--gold); font-family:'Cormorant Garamond'; font-weight:700; }
-  .state-msg{ text-align:center; padding:40px 20px; color:var(--gold-soft); font-size:13px; grid-column: 1/-1; }
+  .item-card.has-qty{ border-color: var(--gold); }
+  .item-card .nm{ font-size:13.5px; color:var(--cream); }
+  .item-card .pr{ font-size:14px; color:var(--gold); font-family:'Cormorant Garamond'; font-weight:700; }
+  .qty-row{ display:flex; align-items:center; justify-content:space-between; gap:6px; }
+  .qty-row button{
+    width:32px; height:32px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line); color:var(--gold);
+    font-size:17px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .qty-row button.plus{ color:#1a140d; background:var(--gold); }
+  .qty-row .q{ font-size:15px; font-weight:700; min-width:20px; text-align:center; }
 
   /* ---------- CART BAR ---------- */
   .cart-bar{
     position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--line);
     z-index:30; max-height: 70vh; display:flex; flex-direction:column;
   }
-  .cart-summary{
-    display:flex; align-items:center; justify-content:space-between; padding:14px 18px; cursor:pointer;
-  }
+  .cart-summary{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px; cursor:pointer; }
   .cart-summary .count{ font-size:13px; color:var(--cream-dim); }
   .cart-summary .total{ font-size:18px; color:var(--gold); font-family:'Cormorant Garamond'; font-weight:700; }
   .cart-list{ overflow-y:auto; padding:0 18px; border-top:1px solid var(--line); display:none; }
   .cart-bar.open .cart-list{ display:block; }
-  .cart-row{
-    display:flex; align-items:center; justify-content:space-between; gap:10px;
-    padding:10px 0; border-bottom:1px dashed rgba(201,164,77,0.14);
-  }
+  .cart-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px dashed rgba(201,164,77,0.14); }
   .cart-row .nm{ font-size:13px; flex:1; }
-  .qty-ctrl{ display:flex; align-items:center; gap:8px; }
-  .qty-ctrl button{
-    width:26px; height:26px; border-radius:6px; background:var(--surface-2); border:1px solid var(--line); color:var(--gold);
-    font-size:14px; display:flex; align-items:center; justify-content:center;
-  }
-  .qty-ctrl .q{ font-size:13px; min-width:16px; text-align:center; }
   .line-total{ font-size:13px; color:var(--gold); font-family:'Cormorant Garamond'; font-weight:700; width:52px; text-align:left; }
-  .remove-row{ color:var(--danger); font-size:13px; padding:0 4px; background:none; border:none; }
 
   .cart-actions{ display:flex; gap:10px; padding:14px 18px; }
   .cart-actions button{ flex:1; padding:12px; border-radius:8px; font-size:13.5px; font-weight:700; border:none; }
@@ -116,33 +112,18 @@
   .btn-checkout:disabled{ opacity:.4; }
 
   /* ---------- MODALS ---------- */
-  .modal-overlay{
-    position:fixed; inset:0; background:rgba(8,6,4,0.85); z-index:50;
-    display:flex; align-items:center; justify-content:center; padding:20px;
-  }
-  .modal-box{
-    width:100%; max-width:380px; background:var(--surface); border:1px solid var(--line); border-radius:14px;
-    padding:24px; max-height:85vh; overflow-y:auto;
-  }
+  .modal-overlay{ position:fixed; inset:0; background:rgba(8,6,4,0.85); z-index:50; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .modal-box{ width:100%; max-width:400px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:24px; max-height:85vh; overflow-y:auto; }
   .modal-box h3{ margin:0 0 16px; font-size:16px; text-align:center; }
   .pay-options{ display:flex; gap:12px; margin-bottom:16px; }
-  .pay-options button{
-    flex:1; padding:16px 10px; border-radius:10px; background:var(--surface-2); border:1px solid var(--line);
-    color:var(--cream); font-size:13.5px; display:flex; flex-direction:column; align-items:center; gap:6px;
-  }
+  .pay-options button{ flex:1; padding:16px 10px; border-radius:10px; background:var(--surface-2); border:1px solid var(--line); color:var(--cream); font-size:13.5px; display:flex; flex-direction:column; align-items:center; gap:6px; }
   .pay-options button.selected{ border-color:var(--gold); color:var(--gold); background:rgba(201,164,77,0.12); }
   .modal-total{ text-align:center; font-size:22px; color:var(--gold); font-family:'Cormorant Garamond'; font-weight:700; margin-bottom:16px; }
-  .modal-box .confirm-btn{ width:100%; background:var(--gold); color:#1a140d; border:none; padding:12px; border-radius:8px; font-weight:700; font-size:14px; }
+  .modal-box .confirm-btn{ width:100%; background:var(--gold); color:#1a140d; border:none; padding:12px; border-radius:8px; font-weight:700; font-size:14px; margin-top:6px; }
   .modal-box .close-btn{ width:100%; background:transparent; color:var(--cream-dim); border:1px solid var(--line); padding:10px; border-radius:8px; font-size:13px; margin-top:10px; }
+  .modal-box .secondary-btn{ width:100%; background:var(--surface-2); color:var(--gold); border:1px solid var(--line); padding:12px; border-radius:8px; font-weight:700; font-size:13.5px; margin-top:8px; }
 
-  .receipt{ font-size:13px; line-height:1.9; }
-  .receipt .r-row{ display:flex; justify-content:space-between; }
-  .receipt hr{ border:none; border-top:1px dashed var(--line); margin:10px 0; }
-  .receipt .r-total{ font-size:16px; color:var(--gold); font-weight:700; }
-
-  .invoice-item{
-    border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:10px; font-size:12.5px;
-  }
+  .invoice-item{ border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:10px; font-size:12.5px; }
   .invoice-item.cancelled{ opacity:.4; }
   .invoice-item .top-row{ display:flex; justify-content:space-between; margin-bottom:6px; color:var(--gold); font-weight:700; }
   .invoice-item .meta{ color:var(--cream-dim); font-size:11.5px; margin-bottom:6px; }
@@ -153,8 +134,12 @@
   .report-table th{ color:var(--gold); }
   .report-table tfoot td{ font-weight:700; color:var(--gold); }
 
-  .pin-pad{ display:grid; grid-template-columns: repeat(3,1fr); gap:8px; margin-bottom:14px; }
-  .pin-pad button{ padding:14px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line); color:var(--cream); font-size:16px; }
+  .emp-manage-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 0; border-bottom:1px dashed rgba(201,164,77,0.14); font-size:13px; }
+  .emp-manage-row .tag{ font-size:10px; color:#1a140d; background:var(--gold); padding:1px 7px; border-radius:999px; margin-right:6px; }
+  .emp-manage-row .del-btn{ background:transparent; border:1px solid rgba(177,91,82,0.4); color:#d98a80; font-size:11px; padding:5px 9px; border-radius:6px; }
+  .add-emp-form{ display:flex; flex-direction:column; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+  .add-emp-form input{ background:var(--surface-2); border:1px solid var(--line); color:var(--cream); border-radius:8px; padding:9px 10px; font-size:13px; }
+  .add-emp-form label{ font-size:12px; color:var(--cream-dim); display:flex; align-items:center; gap:6px; }
 </style>
 </head>
 <body>
@@ -164,7 +149,7 @@
   <div class="login-box">
     <h2>نظام الكاشير</h2>
     <div class="sub">Farah Coffee — تسجيل دخول الموظف</div>
-    <div class="emp-grid" id="empGrid"></div>
+    <div class="emp-grid" id="empGrid"><div class="state-msg">جاري تحميل الموظفين...</div></div>
     <input class="pin-input" id="pinInput" type="password" inputmode="numeric" maxlength="6" placeholder="••••">
     <button class="go-btn" onclick="doLogin()">دخول</button>
     <div class="login-error" id="loginError">الاسم أو الـ PIN غلط</div>
@@ -174,10 +159,11 @@
 <!-- APP -->
 <div id="app" class="hidden">
   <header>
-    <div class="who">شغّال دلوقتي: <b id="whoName"></b></div>
+    <div class="who"><span id="adminTag"></span>شغّال دلوقتي: <b id="whoName"></b></div>
     <div class="header-actions">
       <button class="pill-btn" onclick="openInvoices()">فواتير النهاردة</button>
-      <button class="pill-btn" onclick="openReport()">تقرير نهاية اليوم</button>
+      <button class="pill-btn" onclick="openReport()">تقرير اليوم</button>
+      <button class="pill-btn hidden" id="manageEmpBtn" onclick="openManageEmployees()">الموظفين</button>
       <button class="pill-btn danger" onclick="doLogout()">إنهاء الشيفت</button>
     </div>
   </header>
@@ -206,10 +192,13 @@
 <div id="modalRoot"></div>
 
 <script>
-// ---- Supabase (read menu prices live) ----
+// ---- Supabase ----
 const SUPABASE_URL = 'https://omyucnjkqeyomtvijqwc.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9teXVjbmprcWV5b210dmlqcXdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1NTQ0NDUsImV4cCI6MjEwNDEzMDQ0NX0.jc8WAbBIpMCDzdLCf3RYk9ruLbInBJ7unmnr2u1SEkA';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Fill this in after deploying the Edge Function (see EDGE_FUNCTION_SETUP.md)
+const TELEGRAM_FUNCTION_URL = 'https://omyucnjkqeyomtvijqwc.supabase.co/functions/v1/send-telegram-report';
 
 const CATEGORY_LABELS = {
   hot:   { ar: 'المشروبات الساخنة', en: 'Hot Drinks' },
@@ -218,55 +207,63 @@ const CATEGORY_LABELS = {
 };
 const CATEGORY_ORDER = ['hot', 'cold', 'shake'];
 
-// ---- EDIT THESE: employee names + PINs, and the manager PIN for voiding invoices ----
-const EMPLOYEES = [
-  { name: 'موظف 1', pin: '1111' },
-  { name: 'موظف 2', pin: '2222' },
-  { name: 'موظف 3', pin: '3333' },
-];
-const MANAGER_PIN = '9999';
-
 const LS_INVOICES = 'pos_invoices_v1';
-const LS_COUNTER  = 'pos_daily_counter_v1'; // { date: 'YYYY-MM-DD', count: N }
+const LS_COUNTER  = 'pos_daily_counter_v1';
 
+let employees = [];
 let menuItems = [];
 let currentCat = null;
-let cart = []; // { name_ar, name_en, price, qty }
-let currentEmployee = null;
-let selectedEmpName = null;
+let cart = []; // { name_ar, price, qty }
+let currentEmployee = null; // { id, name, is_admin }
+let selectedEmpId = null;
 
-// ================= LOGIN =================
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
 function todayStr(){
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
-const empGrid = document.getElementById('empGrid');
-EMPLOYEES.forEach(emp => {
-  const btn = document.createElement('button');
-  btn.className = 'emp-btn';
-  btn.textContent = emp.name;
-  btn.onclick = () => {
-    selectedEmpName = emp.name;
-    document.querySelectorAll('.emp-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-  };
-  empGrid.appendChild(btn);
-});
+// ================= LOGIN =================
+async function loadEmployees(){
+  const { data, error } = await sb.from('pos_employees').select('*').order('id');
+  const empGrid = document.getElementById('empGrid');
+  if(error){
+    empGrid.innerHTML = '<div class="state-msg">تعذّر تحميل قائمة الموظفين</div>';
+    console.error(error);
+    return;
+  }
+  employees = data || [];
+  empGrid.innerHTML = '';
+  employees.forEach(emp => {
+    const btn = document.createElement('button');
+    btn.className = 'emp-btn';
+    btn.textContent = emp.name + (emp.is_admin ? ' (أدمن)' : '');
+    btn.onclick = () => {
+      selectedEmpId = emp.id;
+      document.querySelectorAll('.emp-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    };
+    empGrid.appendChild(btn);
+  });
+}
 
 function doLogin(){
   const pin = document.getElementById('pinInput').value.trim();
   const errEl = document.getElementById('loginError');
-  const emp = EMPLOYEES.find(e => e.name === selectedEmpName && e.pin === pin);
+  const emp = employees.find(e => e.id === selectedEmpId && String(e.pin) === pin);
   if(!emp){
     errEl.classList.add('show');
     return;
   }
   errEl.classList.remove('show');
-  currentEmployee = emp.name;
+  currentEmployee = emp;
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
-  document.getElementById('whoName').textContent = currentEmployee;
+  document.getElementById('whoName').textContent = currentEmployee.name;
+  document.getElementById('adminTag').innerHTML = currentEmployee.is_admin ? '<span class="admin-tag">أدمن</span>' : '';
+  document.getElementById('manageEmpBtn').classList.toggle('hidden', !currentEmployee.is_admin);
   document.getElementById('pinInput').value = '';
   loadMenu();
 }
@@ -277,7 +274,7 @@ function doLogout(){
   cart = [];
   document.getElementById('app').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
-  selectedEmpName = null;
+  selectedEmpId = null;
   document.querySelectorAll('.emp-btn').forEach(b => b.classList.remove('selected'));
 }
 
@@ -305,35 +302,46 @@ function renderCats(){
 
   const grid = document.getElementById('itemsGrid');
   const list = groups[currentCat] || [];
-  grid.innerHTML = list.map(it => `
-    <button class="item-btn" onclick='addToCart(${JSON.stringify(it.name_ar)}, ${JSON.stringify(it.name_en||"")}, ${it.price})'>
-      <span class="nm">${escapeHtml(it.name_ar)}</span>
-      <span class="pr">${it.price} ج.م</span>
-    </button>
-  `).join('') || '<div class="state-msg">مفيش أصناف متاحة في القسم ده</div>';
+  grid.innerHTML = list.map(it => itemCardHtml(it)).join('') || '<div class="state-msg">مفيش أصناف متاحة في القسم ده</div>';
 }
 
-function escapeHtml(str){
-  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function qtyInCart(name_ar, price){
+  const row = cart.find(c => c.name_ar === name_ar && c.price === price);
+  return row ? row.qty : 0;
 }
+
+function itemCardHtml(it){
+  const qty = qtyInCart(it.name_ar, it.price);
+  return `
+  <div class="item-card ${qty > 0 ? 'has-qty' : ''}">
+    <span class="nm">${escapeHtml(it.name_ar)}</span>
+    <span class="pr">${it.price} ج.م</span>
+    <div class="qty-row">
+      <button onclick="cardChangeQty('${escapeAttr(it.name_ar)}', ${it.price}, -1)">−</button>
+      <span class="q">${qty}</span>
+      <button class="plus" onclick="cardChangeQty('${escapeAttr(it.name_ar)}', ${it.price}, 1)">+</button>
+    </div>
+  </div>`;
+}
+function escapeAttr(str){ return String(str).replace(/'/g, "\\'"); }
 
 // ================= CART =================
-function addToCart(name_ar, name_en, price){
-  const existing = cart.find(c => c.name_ar === name_ar && c.price === price);
-  if(existing) existing.qty++;
-  else cart.push({ name_ar, name_en, price, qty: 1 });
+function cardChangeQty(name_ar, price, delta){
+  let row = cart.find(c => c.name_ar === name_ar && c.price === price);
+  if(!row && delta > 0){
+    cart.push({ name_ar, price, qty: 1 });
+  }else if(row){
+    row.qty += delta;
+    if(row.qty <= 0) cart = cart.filter(c => c !== row);
+  }
   renderCart();
-}
-
-function changeQty(idx, delta){
-  cart[idx].qty += delta;
-  if(cart[idx].qty <= 0) cart.splice(idx, 1);
-  renderCart();
+  renderCats(); // refresh quantities shown on the product cards
 }
 
 function removeRow(idx){
   cart.splice(idx, 1);
   renderCart();
+  renderCats();
 }
 
 function cartTotal(){
@@ -341,7 +349,6 @@ function cartTotal(){
 }
 
 function renderCart(){
-  const bar = document.getElementById('cartBar');
   const countEl = document.getElementById('cartCount');
   const totalEl = document.getElementById('cartTotalTop');
   const listEl = document.getElementById('cartList');
@@ -354,43 +361,34 @@ function renderCart(){
 
   listEl.innerHTML = cart.map((c,i) => `
     <div class="cart-row">
-      <div class="nm">${escapeHtml(c.name_ar)}</div>
-      <div class="qty-ctrl">
-        <button onclick="changeQty(${i},-1)">−</button>
-        <span class="q">${c.qty}</span>
-        <button onclick="changeQty(${i},1)">+</button>
-      </div>
+      <div class="nm">${escapeHtml(c.name_ar)} × ${c.qty}</div>
       <div class="line-total">${c.price*c.qty}</div>
-      <button class="remove-row" onclick="removeRow(${i})">✕</button>
+      <button class="btn-cancel" style="flex:none; padding:4px 10px;" onclick="removeRow(${i})">✕</button>
     </div>
   `).join('');
 }
 
-function toggleCart(){
-  document.getElementById('cartBar').classList.toggle('open');
-}
+function toggleCart(){ document.getElementById('cartBar').classList.toggle('open'); }
 
 function clearCart(){
   if(!cart.length) return;
   if(!confirm('تفريغ السلة بالكامل؟')) return;
   cart = [];
   renderCart();
+  renderCats();
 }
 
-// ================= INVOICES (localStorage) =================
+// ================= INVOICES (localStorage — single fixed device) =================
 function getInvoices(){
   try{ return JSON.parse(localStorage.getItem(LS_INVOICES)) || []; }catch(e){ return []; }
 }
-function saveInvoices(list){
-  localStorage.setItem(LS_INVOICES, JSON.stringify(list));
-}
+function saveInvoices(list){ localStorage.setItem(LS_INVOICES, JSON.stringify(list)); }
+
 function nextInvoiceNumber(){
   let counter;
   try{ counter = JSON.parse(localStorage.getItem(LS_COUNTER)); }catch(e){ counter = null; }
   const today = todayStr();
-  if(!counter || counter.date !== today){
-    counter = { date: today, count: 0 };
-  }
+  if(!counter || counter.date !== today) counter = { date: today, count: 0 };
   counter.count += 1;
   localStorage.setItem(LS_COUNTER, JSON.stringify(counter));
   return counter.count;
@@ -416,7 +414,6 @@ function openPaymentModal(){
       </div>
     </div>`;
 }
-
 function selectPayment(method){
   pendingPayment = method;
   document.getElementById('payCash').classList.toggle('selected', method==='cash');
@@ -433,7 +430,7 @@ function confirmSale(){
     number: num,
     date: todayStr(),
     time: now.toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' }),
-    employee: currentEmployee,
+    employee: currentEmployee.name,
     items: cart.map(c => ({...c})),
     total: cartTotal(),
     payment: pendingPayment,
@@ -443,36 +440,21 @@ function confirmSale(){
   saveInvoices(invoices);
   cart = [];
   renderCart();
+  renderCats();
   document.getElementById('cartBar').classList.remove('open');
-  showReceipt(invoice);
+  closeModal();
+  alert(`تم البيع — فاتورة رقم ${invoice.number} بقيمة ${invoice.total} ج.م`);
 }
 
-function showReceipt(invoice){
-  document.getElementById('modalRoot').innerHTML = `
-    <div class="modal-overlay">
-      <div class="modal-box">
-        <h3>فاتورة رقم ${invoice.number}</h3>
-        <div class="receipt">
-          <div class="r-row"><span>الموظف</span><span>${escapeHtml(invoice.employee)}</span></div>
-          <div class="r-row"><span>الوقت</span><span class="en">${invoice.time}</span></div>
-          <div class="r-row"><span>طريقة الدفع</span><span>${invoice.payment === 'cash' ? 'كاش' : 'بنكك'}</span></div>
-          <hr>
-          ${invoice.items.map(it => `<div class="r-row"><span>${escapeHtml(it.name_ar)} × ${it.qty}</span><span>${it.price*it.qty}</span></div>`).join('')}
-          <hr>
-          <div class="r-row r-total"><span>الإجمالي</span><span>${invoice.total} ج.م</span></div>
-        </div>
-        <button class="confirm-btn" style="margin-top:16px;" onclick="closeModal()">تمام</button>
-      </div>
-    </div>`;
-}
+function closeModal(){ document.getElementById('modalRoot').innerHTML = ''; }
 
-function closeModal(){
-  document.getElementById('modalRoot').innerHTML = '';
-}
-
-// ================= TODAY'S INVOICES / VOID =================
+// ================= TODAY'S INVOICES / VOID (any admin PIN) =================
 function openInvoices(){
-  const invoices = getInvoices().filter(i => i.date === todayStr()).sort((a,b) => b.number - a.number);
+  const isAdmin = currentEmployee.is_admin;
+  let invoices = getInvoices().filter(i => i.date === todayStr());
+  if(!isAdmin) invoices = invoices.filter(i => i.employee === currentEmployee.name);
+  invoices = invoices.sort((a,b) => b.number - a.number);
+
   document.getElementById('modalRoot').innerHTML = `
     <div class="modal-overlay">
       <div class="modal-box">
@@ -480,7 +462,7 @@ function openInvoices(){
         ${invoices.map(inv => `
           <div class="invoice-item ${inv.status === 'cancelled' ? 'cancelled' : ''}">
             <div class="top-row"><span>فاتورة #${inv.number}</span><span>${inv.total} ج.م</span></div>
-            <div class="meta">${escapeHtml(inv.employee)} — <span class="en">${inv.time}</span> — ${inv.payment==='cash'?'كاش':'بنكك'} ${inv.status==='cancelled' ? ' — ملغاة' : ''}</div>
+            <div class="meta">${escapeHtml(inv.employee)} — <span class="en">${inv.time}</span> — ${inv.payment==='cash'?'كاش':'بنكك'}${inv.status==='cancelled' ? ' — ملغاة' : ''}</div>
             ${inv.status !== 'cancelled' ? `<button class="void-btn" onclick="voidInvoicePrompt('${inv.id}')">إلغاء الفاتورة</button>` : ''}
           </div>
         `).join('') || '<div class="state-msg">مفيش فواتير النهاردة لسه</div>'}
@@ -494,7 +476,7 @@ function voidInvoicePrompt(id){
     <div class="modal-overlay">
       <div class="modal-box">
         <h3>تأكيد إلغاء الفاتورة</h3>
-        <p style="text-align:center; font-size:12.5px; color:var(--cream-dim); margin-bottom:14px;">لازم PIN المدير عشان تكمل الإلغاء</p>
+        <p style="text-align:center; font-size:12.5px; color:var(--cream-dim); margin-bottom:14px;">لازم PIN أي أدمن عشان تكمل الإلغاء</p>
         <input class="pin-input" id="voidPin" type="password" inputmode="numeric" maxlength="6" placeholder="••••">
         <button class="confirm-btn" onclick="voidInvoice('${id}')">تأكيد</button>
         <button class="close-btn" onclick="openInvoices()">رجوع</button>
@@ -504,7 +486,8 @@ function voidInvoicePrompt(id){
 
 function voidInvoice(id){
   const pin = document.getElementById('voidPin').value.trim();
-  if(pin !== MANAGER_PIN){ alert('PIN غلط'); return; }
+  const isAdminPin = employees.some(e => e.is_admin && String(e.pin) === pin);
+  if(!isAdminPin){ alert('PIN غلط — لازم PIN أدمن'); return; }
   const invoices = getInvoices();
   const inv = invoices.find(i => i.id === id);
   if(inv) inv.status = 'cancelled';
@@ -512,78 +495,188 @@ function voidInvoice(id){
   openInvoices();
 }
 
-// ================= END OF DAY REPORT =================
-function openReport(){
-  const today = todayStr();
-  const invoices = getInvoices().filter(i => i.date === today && i.status !== 'cancelled');
-
-  const byEmployee = {};
-  let grandTotal = 0, grandCash = 0, grandCard = 0;
+// ================= REPORTS =================
+function computeDayAggregation(dateStr){
+  const invoices = getInvoices().filter(i => i.date === dateStr && i.status !== 'cancelled');
+  const byEmployee = {}; // { name: { count, cash, card, total, items: { name_ar: qty } } }
+  let grandTotal=0, grandCash=0, grandCard=0;
 
   invoices.forEach(inv => {
-    if(!byEmployee[inv.employee]) byEmployee[inv.employee] = { count:0, cash:0, card:0, total:0 };
+    if(!byEmployee[inv.employee]) byEmployee[inv.employee] = { count:0, cash:0, card:0, total:0, items:{} };
     const e = byEmployee[inv.employee];
-    e.count++;
-    e.total += inv.total;
-    if(inv.payment === 'cash') e.cash += inv.total; else e.card += inv.total;
+    e.count++; e.total += inv.total;
+    if(inv.payment === 'cash'){ e.cash += inv.total; grandCash += inv.total; }
+    else { e.card += inv.total; grandCard += inv.total; }
     grandTotal += inv.total;
-    if(inv.payment === 'cash') grandCash += inv.total; else grandCard += inv.total;
+    inv.items.forEach(it => {
+      e.items[it.name_ar] = (e.items[it.name_ar] || 0) + it.qty;
+    });
   });
 
-  const rows = Object.entries(byEmployee).map(([name, e]) => `
+  return { byEmployee, grandTotal, grandCash, grandCard, count: invoices.length };
+}
+
+function openReport(){
+  const today = todayStr();
+  const agg = computeDayAggregation(today);
+  const isAdmin = currentEmployee.is_admin;
+
+  if(!isAdmin){
+    const mine = agg.byEmployee[currentEmployee.name] || { count:0, cash:0, card:0, total:0 };
+    document.getElementById('modalRoot').innerHTML = `
+      <div class="modal-overlay">
+        <div class="modal-box">
+          <h3>تقريرك اليوم — <span class="en">${today}</span></h3>
+          <table class="report-table">
+            <tr><td>عدد الفواتير</td><td>${mine.count}</td></tr>
+            <tr><td>كاش</td><td>${mine.cash} ج.م</td></tr>
+            <tr><td>بنكك</td><td>${mine.card} ج.م</td></tr>
+            <tr><td>الإجمالي</td><td>${mine.total} ج.م</td></tr>
+          </table>
+          <button class="close-btn" onclick="closeModal()">قفل</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const rows = Object.entries(agg.byEmployee).map(([name, e]) => `
     <tr><td>${escapeHtml(name)}</td><td>${e.count}</td><td>${e.cash}</td><td>${e.card}</td><td>${e.total}</td></tr>
   `).join('') || `<tr><td colspan="5">مفيش مبيعات النهاردة لسه</td></tr>`;
 
   document.getElementById('modalRoot').innerHTML = `
     <div class="modal-overlay">
       <div class="modal-box">
-        <h3>تقرير نهاية اليوم — <span class="en">${today}</span></h3>
+        <h3>تقرير اليوم الكامل — <span class="en">${today}</span></h3>
         <table class="report-table">
           <thead><tr><th>الموظف</th><th>الفواتير</th><th>كاش</th><th>بنكك</th><th>الإجمالي</th></tr></thead>
           <tbody>${rows}</tbody>
-          <tfoot><tr><td>الإجمالي الكلي</td><td>${invoices.length}</td><td>${grandCash}</td><td>${grandCard}</td><td>${grandTotal}</td></tr></tfoot>
+          <tfoot><tr><td>الإجمالي الكلي</td><td>${agg.count}</td><td>${agg.grandCash}</td><td>${agg.grandCard}</td><td>${agg.grandTotal}</td></tr></tfoot>
         </table>
-        <button class="confirm-btn" onclick="downloadReport('${today}')">تحميل التقرير (ملف)</button>
+        <button class="secondary-btn" onclick="downloadExcelReport('${today}')">تحميل ملف إكسيل</button>
+        <button class="confirm-btn" onclick="sendReportToTelegram('${today}')" id="sendTgBtn">إرسال لتليجرام</button>
         <button class="close-btn" onclick="closeModal()">قفل</button>
       </div>
     </div>`;
 }
 
-function downloadReport(dateStr){
-  const invoices = getInvoices().filter(i => i.date === dateStr && i.status !== 'cancelled');
-  const byEmployee = {};
-  let grandTotal=0, grandCash=0, grandCard=0;
-  invoices.forEach(inv => {
-    if(!byEmployee[inv.employee]) byEmployee[inv.employee] = { count:0, cash:0, card:0, total:0 };
-    const e = byEmployee[inv.employee];
-    e.count++; e.total += inv.total;
-    if(inv.payment==='cash'){ e.cash += inv.total; grandCash += inv.total; } else { e.card += inv.total; grandCard += inv.total; }
-    grandTotal += inv.total;
+// ---- Build the Excel workbook: one sheet, each employee's items + qty, then grand total ----
+function buildReportWorkbook(dateStr){
+  const agg = computeDayAggregation(dateStr);
+  const rows = [];
+  rows.push(['تقرير مبيعات Farah Coffee', dateStr]);
+  rows.push([]);
+
+  Object.entries(agg.byEmployee).forEach(([name, e]) => {
+    rows.push(['الموظف:', name]);
+    rows.push(['الصنف', 'العدد']);
+    Object.entries(e.items).forEach(([itemName, qty]) => {
+      rows.push([itemName, qty]);
+    });
+    rows.push(['إجمالي كاش', e.cash]);
+    rows.push(['إجمالي بنكك', e.card]);
+    rows.push(['إجمالي الموظف', e.total]);
+    rows.push([]);
   });
 
-  let text = `تقرير مبيعات Farah Coffee - ${dateStr}\n`;
-  text += '='.repeat(40) + '\n\n';
-  Object.entries(byEmployee).forEach(([name, e]) => {
-    text += `الموظف: ${name}\n`;
-    text += `  عدد الفواتير: ${e.count}\n`;
-    text += `  كاش: ${e.cash} ج.م\n`;
-    text += `  بنكك: ${e.card} ج.م\n`;
-    text += `  الإجمالي: ${e.total} ج.م\n\n`;
-  });
-  text += '-'.repeat(40) + '\n';
-  text += `إجمالي عدد الفواتير: ${invoices.length}\n`;
-  text += `إجمالي الكاش: ${grandCash} ج.م\n`;
-  text += `إجمالي البنكك: ${grandCard} ج.م\n`;
-  text += `الإجمالي الكلي: ${grandTotal} ج.م\n`;
+  rows.push(['الإجمالي الكلي لليوم']);
+  rows.push(['عدد الفواتير', agg.count]);
+  rows.push(['إجمالي كاش', agg.grandCash]);
+  rows.push(['إجمالي بنكك', agg.grandCard]);
+  rows.push(['الإجمالي الكلي', agg.grandTotal]);
 
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `farah-coffee-report-${dateStr}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'التقرير');
+  return wb;
 }
+
+function downloadExcelReport(dateStr){
+  const wb = buildReportWorkbook(dateStr);
+  XLSX.writeFile(wb, `farah-coffee-report-${dateStr}.xlsx`);
+}
+
+async function sendReportToTelegram(dateStr){
+  const btn = document.getElementById('sendTgBtn');
+  btn.disabled = true;
+  btn.textContent = 'جاري الإرسال...';
+
+  try{
+    const wb = buildReportWorkbook(dateStr);
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+
+    const res = await fetch(TELEGRAM_FUNCTION_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: `farah-coffee-report-${dateStr}.xlsx`,
+        fileBase64: wbout,
+        caption: `تقرير مبيعات Farah Coffee - ${dateStr}`
+      })
+    });
+    const json = await res.json();
+    if(!res.ok || json.error){
+      throw new Error(json.error || 'فشل الإرسال');
+    }
+    btn.textContent = '✓ اتبعت لتليجرام';
+  }catch(err){
+    console.error(err);
+    btn.textContent = 'حصل خطأ، جرب تاني';
+    btn.disabled = false;
+  }
+}
+
+// ================= MANAGE EMPLOYEES (admin only) =================
+function openManageEmployees(){
+  if(!currentEmployee.is_admin) return;
+  renderManageEmployeesModal();
+}
+
+function renderManageEmployeesModal(){
+  document.getElementById('modalRoot').innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-box">
+        <h3>إدارة الموظفين</h3>
+        <div id="empList"></div>
+        <div class="add-emp-form">
+          <input id="newEmpName" placeholder="اسم الموظف">
+          <input id="newEmpPin" placeholder="PIN (أرقام)" inputmode="numeric" maxlength="6">
+          <label><input type="checkbox" id="newEmpAdmin"> صلاحية أدمن</label>
+          <button class="confirm-btn" onclick="addEmployee()">إضافة موظف</button>
+        </div>
+        <button class="close-btn" onclick="closeModal()">قفل</button>
+      </div>
+    </div>`;
+  const listEl = document.getElementById('empList');
+  listEl.innerHTML = employees.map(e => `
+    <div class="emp-manage-row">
+      <span>${e.is_admin ? '<span class="tag">أدمن</span>' : ''}${escapeHtml(e.name)}</span>
+      <button class="del-btn" onclick="deleteEmployee(${e.id})">حذف</button>
+    </div>
+  `).join('');
+}
+
+async function addEmployee(){
+  const name = document.getElementById('newEmpName').value.trim();
+  const pin = document.getElementById('newEmpPin').value.trim();
+  const is_admin = document.getElementById('newEmpAdmin').checked;
+  if(!name || !pin){ alert('لازم اسم و PIN'); return; }
+
+  const { error } = await sb.from('pos_employees').insert({ name, pin, is_admin });
+  if(error){ alert('حصل خطأ في الإضافة'); console.error(error); return; }
+  await loadEmployees();
+  renderManageEmployeesModal();
+}
+
+async function deleteEmployee(id){
+  if(!confirm('متأكد إنك عايز تحذف الموظف ده؟')) return;
+  const { error } = await sb.from('pos_employees').delete().eq('id', id);
+  if(error){ alert('حصل خطأ في الحذف'); console.error(error); return; }
+  await loadEmployees();
+  renderManageEmployeesModal();
+}
+
+// ================= INIT =================
+loadEmployees();
 </script>
 </body>
 </html>
