@@ -667,35 +667,42 @@ function openReport(){
 }
 
 // ---- Build the Excel workbook: one sheet, each employee's items + qty, then grand total ----
-function buildReportWorkbook(dateStr){
+async function buildReportWorkbook(dateStr){
   const agg = computeDayAggregation(dateStr);
   const rows = [];
   rows.push(['تقرير مبيعات Farah Coffee', dateStr]);
   rows.push([]);
 
-  Object.entries(agg.byEmployee).forEach(([name, e]) => {
-    rows.push(['الموظف:', name]);
-    rows.push(['الصنف', 'العدد']);
-    Object.entries(e.items).forEach(([itemName, qty]) => {
-      rows.push([itemName, qty]);
+  // Column list = every menu item (even currently-unavailable ones), in category order
+  const { data: allItems, error: itemsErr } = await sb.from('items').select('*').order('sort_order');
+  const sourceItems = itemsErr ? menuItems : (allItems || []);
+  const sortedItems = CATEGORY_ORDER.flatMap(cat => sourceItems.filter(it => it.category === cat));
+  const itemNames = sortedItems.map(it => it.name_ar);
+
+  const header = ['اسم الموظف', ...itemNames, 'كاش', 'بنكك', 'إجمالي الموظف'];
+  rows.push(header);
+
+  const employeeNames = Object.keys(agg.byEmployee);
+  const itemColumnTotals = itemNames.map(() => 0);
+
+  employeeNames.forEach(name => {
+    const e = agg.byEmployee[name];
+    const qtyCells = itemNames.map((itemName, i) => {
+      const qty = e.items[itemName] || 0;
+      itemColumnTotals[i] += qty;
+      return qty;
     });
-    rows.push(['إجمالي كاش', e.cash]);
-    rows.push(['إجمالي بنكك', e.card]);
-    rows.push(['إجمالي الموظف', e.total]);
-    rows.push([]);
+    rows.push([name, ...qtyCells, e.cash, e.card, e.total]);
   });
 
-  rows.push(['الإجمالي الكلي لليوم']);
-  rows.push(['عدد الفواتير', agg.count]);
-  rows.push(['إجمالي كاش', agg.grandCash]);
-  rows.push(['إجمالي بنكك', agg.grandCard]);
-  rows.push(['إجمالي المبيعات', agg.grandTotal]);
+  rows.push(['الإجمالي', ...itemColumnTotals, agg.grandCash, agg.grandCard, agg.grandTotal]);
   rows.push([]);
 
+  // Expenses: one standalone section, not attributed to any employee row
   const expenses = getExpenses().filter(e => e.date === dateStr);
   const expensesTotal = expenses.reduce((s,e) => s + e.amount, 0);
   rows.push(['المصروفات']);
-  rows.push(['اسم المصروف', 'المبلغ', 'الموظف', 'ملحوظة']);
+  rows.push(['اسم المصروف', 'المبلغ', 'الموظف اللي ضافه', 'ملحوظة']);
   expenses.forEach(e => {
     rows.push([e.name, e.amount, e.employee, e.note || '']);
   });
@@ -710,8 +717,8 @@ function buildReportWorkbook(dateStr){
   return wb;
 }
 
-function downloadExcelReport(dateStr){
-  const wb = buildReportWorkbook(dateStr);
+async function downloadExcelReport(dateStr){
+  const wb = await buildReportWorkbook(dateStr);
   XLSX.writeFile(wb, `farah-coffee-report-${dateStr}.xlsx`);
 }
 
@@ -721,7 +728,7 @@ async function sendReportToTelegram(dateStr){
   btn.textContent = 'جاري الإرسال...';
 
   try{
-    const wb = buildReportWorkbook(dateStr);
+    const wb = await buildReportWorkbook(dateStr);
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
 
     const res = await fetch(TELEGRAM_FUNCTION_URL, {
