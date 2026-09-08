@@ -750,7 +750,7 @@ async function sendReportToTelegram(dateStr){
     if(!res.ok || json.error){
       throw new Error(json.error || 'فشل الإرسال');
     }
-    btn.textContent = '✓ اتبعت لتليجرام';
+    btn.textContent = '✓ اترسل لتليجرام';
   }catch(err){
     console.error(err);
     btn.textContent = 'حصل خطأ، جرب تاني';
