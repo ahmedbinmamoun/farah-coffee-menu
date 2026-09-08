@@ -167,7 +167,7 @@
 <!-- APP -->
 <div id="app" class="hidden">
   <header>
-    <div class="who"><span id="adminTag"></span>شغّال حاليا: <b id="whoName"></b></div>
+    <div class="who"><span id="adminTag"></span>شغّال دلوقتي: <b id="whoName"></b></div>
     <div class="header-actions">
       <button class="pill-btn" onclick="openInvoices()">فواتير الليلة</button>
       <button class="pill-btn" onclick="openExpenses()">المصروفات</button>
@@ -312,7 +312,7 @@ function renderCats(){
 
   const grid = document.getElementById('itemsGrid');
   const list = groups[currentCat] || [];
-  grid.innerHTML = list.map(it => itemCardHtml(it)).join('') || '<div class="state-msg">مافي أصناف متاحة في القسم ده</div>';
+  grid.innerHTML = list.map(it => itemCardHtml(it)).join('') || '<div class="state-msg">مفيش أصناف متاحة في القسم ده</div>';
 }
 
 function qtyInCart(name_ar, price){
@@ -475,7 +475,7 @@ function openInvoices(){
             <div class="meta">${escapeHtml(inv.employee)} — <span class="en">${inv.time}</span> — ${inv.payment==='cash'?'كاش':'بنكك'}${inv.status==='cancelled' ? ' — ملغاة' : ''}</div>
             ${inv.status !== 'cancelled' ? `<button class="void-btn" onclick="voidInvoicePrompt('${inv.id}')">إلغاء الفاتورة</button>` : ''}
           </div>
-        `).join('') || '<div class="state-msg">مافي فواتير الليلة لسه</div>'}
+        `).join('') || '<div class="state-msg">مفيش فواتير الليلة لسه</div>'}
         <button class="close-btn" onclick="closeModal()">قفل</button>
       </div>
     </div>`;
@@ -531,7 +531,7 @@ function openExpenses(){
                 <button class="del-btn" onclick="deleteExpensePrompt(${e.id})">حذف</button>
               </div>
             </div>
-          `).join('') || '<div class="state-msg">مافي مصروفات اليوم لسه</div>'}
+          `).join('') || '<div class="state-msg">مفيش مصروفات اليوم لسه</div>'}
         </div>
         <div class="add-expense-form">
           <input id="newExpName" placeholder="اسم المصروف (مثال: سكر وحليب)">
@@ -615,9 +615,9 @@ function computeDayAggregation(dateStr){
   return { byEmployee, grandTotal, grandCash, grandCard, count: invoices.length };
 }
 
-function openReport(){
-  const today = todayStr();
-  const agg = computeDayAggregation(today);
+function openReport(dateStr){
+  const selectedDate = dateStr || todayStr();
+  const agg = computeDayAggregation(selectedDate);
   const isAdmin = currentEmployee.is_admin;
 
   if(!isAdmin){
@@ -625,7 +625,7 @@ function openReport(){
     document.getElementById('modalRoot').innerHTML = `
       <div class="modal-overlay">
         <div class="modal-box">
-          <h3>تقريرك اليوم — <span class="en">${today}</span></h3>
+          <h3>تقريرك اليوم — <span class="en">${selectedDate}</span></h3>
           <table class="report-table">
             <tr><td>عدد الفواتير</td><td>${mine.count}</td></tr>
             <tr><td>كاش</td><td>${mine.cash} ج</td></tr>
@@ -640,15 +640,21 @@ function openReport(){
 
   const rows = Object.entries(agg.byEmployee).map(([name, e]) => `
     <tr><td>${escapeHtml(name)}</td><td>${e.count}</td><td>${e.cash}</td><td>${e.card}</td><td>${e.total}</td></tr>
-  `).join('') || `<tr><td colspan="5">مافي مبيعات الليلة لسه</td></tr>`;
+  `).join('') || `<tr><td colspan="5">مفيش مبيعات في اليوم ده</td></tr>`;
 
-  const expensesTotal = todayExpensesTotal(today);
+  const expensesTotal = todayExpensesTotal(selectedDate);
   const netProfit = agg.grandTotal - expensesTotal;
 
   document.getElementById('modalRoot').innerHTML = `
     <div class="modal-overlay">
       <div class="modal-box">
-        <h3>تقرير اليوم الكامل — <span class="en">${today}</span></h3>
+        <h3>تقرير يوم <span class="en">${selectedDate}</span></h3>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+          <label style="font-size:12px; color:var(--cream-dim); flex-shrink:0;">اختار يوم تاني:</label>
+          <input type="date" id="reportDatePicker" value="${selectedDate}" max="${todayStr()}"
+            style="flex:1; background:var(--surface-2); border:1px solid var(--line); color:var(--cream); border-radius:8px; padding:8px 10px; font-size:13px;"
+            onchange="openReport(this.value)">
+        </div>
         <table class="report-table">
           <thead><tr><th>الموظف</th><th>الفواتير</th><th>كاش</th><th>بنكك</th><th>الإجمالي</th></tr></thead>
           <tbody>${rows}</tbody>
@@ -659,8 +665,8 @@ function openReport(){
           <tr><td>إجمالي المصروفات</td><td>${expensesTotal} ج</td></tr>
           <tr><td><b>صافي الربح</b></td><td><b>${netProfit} ج</b></td></tr>
         </table>
-        <button class="secondary-btn" onclick="downloadExcelReport('${today}')">تحميل ملف إكسيل</button>
-        <button class="confirm-btn" onclick="sendReportToTelegram('${today}')" id="sendTgBtn">إرسال لتليجرام</button>
+        <button class="secondary-btn" onclick="downloadExcelReport('${selectedDate}')">تحميل ملف إكسيل</button>
+        <button class="confirm-btn" onclick="sendReportToTelegram('${selectedDate}')" id="sendTgBtn">إرسال لتليجرام</button>
         <button class="close-btn" onclick="closeModal()">قفل</button>
       </div>
     </div>`;
@@ -744,7 +750,7 @@ async function sendReportToTelegram(dateStr){
     if(!res.ok || json.error){
       throw new Error(json.error || 'فشل الإرسال');
     }
-    btn.textContent = '✓ اترسل لتليجرام';
+    btn.textContent = '✓ اتبعت لتليجرام';
   }catch(err){
     console.error(err);
     btn.textContent = 'حصل خطأ، جرب تاني';
