@@ -140,6 +140,14 @@
   .add-emp-form{ display:flex; flex-direction:column; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
   .add-emp-form input{ background:var(--surface-2); border:1px solid var(--line); color:var(--cream); border-radius:8px; padding:9px 10px; font-size:13px; }
   .add-emp-form label{ font-size:12px; color:var(--cream-dim); display:flex; align-items:center; gap:6px; }
+
+  .expense-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 0; border-bottom:1px dashed rgba(201,164,77,0.14); font-size:12.5px; }
+  .expense-row .info{ display:flex; flex-direction:column; gap:2px; }
+  .expense-row .amt{ color:var(--gold); font-family:'Cormorant Garamond'; font-weight:700; font-size:14px; }
+  .expense-row .meta{ color:var(--cream-dim); font-size:11px; }
+  .expense-row .del-btn{ background:transparent; border:1px solid rgba(177,91,82,0.4); color:#d98a80; font-size:11px; padding:5px 9px; border-radius:6px; }
+  .add-expense-form{ display:flex; flex-direction:column; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+  .add-expense-form input{ background:var(--surface-2); border:1px solid var(--line); color:var(--cream); border-radius:8px; padding:9px 10px; font-size:13px; }
 </style>
 </head>
 <body>
@@ -159,9 +167,10 @@
 <!-- APP -->
 <div id="app" class="hidden">
   <header>
-    <div class="who"><span id="adminTag"></span>شغّال حاليا: <b id="whoName"></b></div>
+    <div class="who"><span id="adminTag"></span>شغّال دلوقتي: <b id="whoName"></b></div>
     <div class="header-actions">
       <button class="pill-btn" onclick="openInvoices()">فواتير الليلة</button>
+      <button class="pill-btn" onclick="openExpenses()">المصروفات</button>
       <button class="pill-btn" onclick="openReport()">تقرير اليوم</button>
       <button class="pill-btn hidden" id="manageEmpBtn" onclick="openManageEmployees()">الموظفين</button>
       <button class="pill-btn danger" onclick="doLogout()">إنهاء الشيفت</button>
@@ -209,6 +218,7 @@ const CATEGORY_ORDER = ['hot', 'cold', 'shake'];
 
 const LS_INVOICES = 'pos_invoices_v1';
 const LS_COUNTER  = 'pos_daily_counter_v1';
+const LS_EXPENSES = 'pos_expenses_v1';
 
 let employees = [];
 let menuItems = [];
@@ -302,7 +312,7 @@ function renderCats(){
 
   const grid = document.getElementById('itemsGrid');
   const list = groups[currentCat] || [];
-  grid.innerHTML = list.map(it => itemCardHtml(it)).join('') || '<div class="state-msg">مافي أصناف متاحة في القسم ده</div>';
+  grid.innerHTML = list.map(it => itemCardHtml(it)).join('') || '<div class="state-msg">مفيش أصناف متاحة في القسم ده</div>';
 }
 
 function qtyInCart(name_ar, price){
@@ -315,7 +325,7 @@ function itemCardHtml(it){
   return `
   <div class="item-card ${qty > 0 ? 'has-qty' : ''}">
     <span class="nm">${escapeHtml(it.name_ar)}</span>
-    <span class="pr">${it.price} ج.م</span>
+    <span class="pr">${it.price} ج</span>
     <div class="qty-row">
       <button onclick="cardChangeQty('${escapeAttr(it.name_ar)}', ${it.price}, -1)">−</button>
       <span class="q">${qty}</span>
@@ -461,11 +471,11 @@ function openInvoices(){
         <h3>فواتير الليلة (${invoices.length})</h3>
         ${invoices.map(inv => `
           <div class="invoice-item ${inv.status === 'cancelled' ? 'cancelled' : ''}">
-            <div class="top-row"><span>فاتورة #${inv.number}</span><span>${inv.total} ج.م</span></div>
+            <div class="top-row"><span>فاتورة #${inv.number}</span><span>${inv.total} ج</span></div>
             <div class="meta">${escapeHtml(inv.employee)} — <span class="en">${inv.time}</span> — ${inv.payment==='cash'?'كاش':'بنكك'}${inv.status==='cancelled' ? ' — ملغاة' : ''}</div>
             ${inv.status !== 'cancelled' ? `<button class="void-btn" onclick="voidInvoicePrompt('${inv.id}')">إلغاء الفاتورة</button>` : ''}
           </div>
-        `).join('') || '<div class="state-msg">لسه ماف فواتير الليلة</div>'}
+        `).join('') || '<div class="state-msg">مفيش فواتير الليلة لسه</div>'}
         <button class="close-btn" onclick="closeModal()">قفل</button>
       </div>
     </div>`;
@@ -493,6 +503,95 @@ function voidInvoice(id){
   if(inv) inv.status = 'cancelled';
   saveInvoices(invoices);
   openInvoices();
+}
+
+// ================= EXPENSES (localStorage — any employee adds, admin deletes) =================
+function getExpenses(){
+  try{ return JSON.parse(localStorage.getItem(LS_EXPENSES)) || []; }catch(e){ return []; }
+}
+function saveExpenses(list){ localStorage.setItem(LS_EXPENSES, JSON.stringify(list)); }
+
+function openExpenses(){
+  const expenses = getExpenses().filter(e => e.date === todayStr()).sort((a,b) => b.id - a.id);
+  const total = expenses.reduce((s,e) => s + e.amount, 0);
+
+  document.getElementById('modalRoot').innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-box">
+        <h3>مصروفات اليوم — إجمالي ${total} ج</h3>
+        <div id="expList">
+          ${expenses.map(e => `
+            <div class="expense-row">
+              <div class="info">
+                <span>${escapeHtml(e.name)}</span>
+                <span class="meta">${escapeHtml(e.employee)} — <span class="en">${e.time}</span>${e.note ? ' — ' + escapeHtml(e.note) : ''}</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="amt">${e.amount} ج</span>
+                <button class="del-btn" onclick="deleteExpensePrompt(${e.id})">حذف</button>
+              </div>
+            </div>
+          `).join('') || '<div class="state-msg">مفيش مصروفات اليوم لسه</div>'}
+        </div>
+        <div class="add-expense-form">
+          <input id="newExpName" placeholder="اسم المصروف (مثال: سكر وحليب)">
+          <input id="newExpAmount" type="number" placeholder="المبلغ">
+          <input id="newExpNote" placeholder="ملحوظة (اختياري)">
+          <button class="confirm-btn" onclick="addExpense()">إضافة مصروف</button>
+        </div>
+        <button class="close-btn" onclick="closeModal()">قفل</button>
+      </div>
+    </div>`;
+}
+
+function addExpense(){
+  const name = document.getElementById('newExpName').value.trim();
+  const amount = Number(document.getElementById('newExpAmount').value);
+  const note = document.getElementById('newExpNote').value.trim();
+
+  if(!name || !amount || amount <= 0){
+    alert('لازم اسم المصروف والمبلغ');
+    return;
+  }
+
+  const expenses = getExpenses();
+  const now = new Date();
+  expenses.push({
+    id: Date.now(),
+    date: todayStr(),
+    time: now.toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' }),
+    employee: currentEmployee.name,
+    name, amount, note
+  });
+  saveExpenses(expenses);
+  openExpenses();
+}
+
+function deleteExpensePrompt(id){
+  document.getElementById('modalRoot').innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-box">
+        <h3>تأكيد حذف المصروف</h3>
+        <p style="text-align:center; font-size:12.5px; color:var(--cream-dim); margin-bottom:14px;">لازم PIN أي أدمن عشان تحذف</p>
+        <input class="pin-input" id="delExpPin" type="password" inputmode="numeric" maxlength="6" placeholder="••••">
+        <button class="confirm-btn" onclick="deleteExpense(${id})">تأكيد</button>
+        <button class="close-btn" onclick="openExpenses()">رجوع</button>
+      </div>
+    </div>`;
+}
+
+function deleteExpense(id){
+  const pin = document.getElementById('delExpPin').value.trim();
+  const isAdminPin = employees.some(e => e.is_admin && String(e.pin) === pin);
+  if(!isAdminPin){ alert('PIN غلط — لازم PIN أدمن'); return; }
+  let expenses = getExpenses();
+  expenses = expenses.filter(e => e.id !== id);
+  saveExpenses(expenses);
+  openExpenses();
+}
+
+function todayExpensesTotal(dateStr){
+  return getExpenses().filter(e => e.date === dateStr).reduce((s,e) => s + e.amount, 0);
 }
 
 // ================= REPORTS =================
@@ -541,7 +640,10 @@ function openReport(){
 
   const rows = Object.entries(agg.byEmployee).map(([name, e]) => `
     <tr><td>${escapeHtml(name)}</td><td>${e.count}</td><td>${e.cash}</td><td>${e.card}</td><td>${e.total}</td></tr>
-  `).join('') || `<tr><td colspan="5">لسه ماف مبيعات الليلة</td></tr>`;
+  `).join('') || `<tr><td colspan="5">مفيش مبيعات الليلة لسه</td></tr>`;
+
+  const expensesTotal = todayExpensesTotal(today);
+  const netProfit = agg.grandTotal - expensesTotal;
 
   document.getElementById('modalRoot').innerHTML = `
     <div class="modal-overlay">
@@ -551,6 +653,11 @@ function openReport(){
           <thead><tr><th>الموظف</th><th>الفواتير</th><th>كاش</th><th>بنكك</th><th>الإجمالي</th></tr></thead>
           <tbody>${rows}</tbody>
           <tfoot><tr><td>الإجمالي الكلي</td><td>${agg.count}</td><td>${agg.grandCash}</td><td>${agg.grandCard}</td><td>${agg.grandTotal}</td></tr></tfoot>
+        </table>
+        <table class="report-table">
+          <tr><td>إجمالي المبيعات</td><td>${agg.grandTotal} ج</td></tr>
+          <tr><td>إجمالي المصروفات</td><td>${expensesTotal} ج</td></tr>
+          <tr><td><b>صافي الربح</b></td><td><b>${netProfit} ج</b></td></tr>
         </table>
         <button class="secondary-btn" onclick="downloadExcelReport('${today}')">تحميل ملف إكسيل</button>
         <button class="confirm-btn" onclick="sendReportToTelegram('${today}')" id="sendTgBtn">إرسال لتليجرام</button>
@@ -582,7 +689,20 @@ function buildReportWorkbook(dateStr){
   rows.push(['عدد الفواتير', agg.count]);
   rows.push(['إجمالي كاش', agg.grandCash]);
   rows.push(['إجمالي بنكك', agg.grandCard]);
-  rows.push(['الإجمالي الكلي', agg.grandTotal]);
+  rows.push(['إجمالي المبيعات', agg.grandTotal]);
+  rows.push([]);
+
+  const expenses = getExpenses().filter(e => e.date === dateStr);
+  const expensesTotal = expenses.reduce((s,e) => s + e.amount, 0);
+  rows.push(['المصروفات']);
+  rows.push(['اسم المصروف', 'المبلغ', 'الموظف', 'ملحوظة']);
+  expenses.forEach(e => {
+    rows.push([e.name, e.amount, e.employee, e.note || '']);
+  });
+  rows.push(['إجمالي المصروفات', expensesTotal]);
+  rows.push([]);
+
+  rows.push(['صافي الربح', agg.grandTotal - expensesTotal]);
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -617,7 +737,7 @@ async function sendReportToTelegram(dateStr){
     if(!res.ok || json.error){
       throw new Error(json.error || 'فشل الإرسال');
     }
-    btn.textContent = '✓ اترسل للتليجرام';
+    btn.textContent = '✓ اتبعت لتليجرام';
   }catch(err){
     console.error(err);
     btn.textContent = 'حصل خطأ، جرب تاني';
