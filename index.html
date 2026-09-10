@@ -236,7 +236,7 @@ function render(items){
   const activeCats = CATEGORY_ORDER.filter(c => groups[c] && groups[c].length);
 
   if(!activeCats.length){
-    mainEl.innerHTML = `<div class="state-msg">المنيو فاضي دلوقتي.</div>`;
+    mainEl.innerHTML = `<div class="state-msg">المنيو فاضي حاليا.</div>`;
     nav.innerHTML = '';
     return;
   }
@@ -273,7 +273,7 @@ function cardHtml(it, i){
         <div class="name-ar">${escapeHtml(it.name_ar)}</div>
         <div class="name-en en">${escapeHtml((it.name_en || '').toUpperCase())}</div>
       </div>
-      ${it.available ? `<div class="price">${it.price} ج.م</div>` : `<div class="out-tag">خلص النهاردة</div>`}
+      ${it.available ? `<div class="price">${it.price} ج</div>` : `<div class="out-tag">خلص الليلة</div>`}
     </div>
   </div>`;
 }
