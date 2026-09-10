@@ -167,7 +167,7 @@
 <!-- APP -->
 <div id="app" class="hidden">
   <header>
-    <div class="who"><span id="adminTag"></span>شغّال دلوقتي: <b id="whoName"></b></div>
+    <div class="who"><span id="adminTag"></span>شغّال حاليا: <b id="whoName"></b></div>
     <div class="header-actions">
       <button class="pill-btn" onclick="openInvoices()">فواتير الليلة</button>
       <button class="pill-btn" onclick="openExpenses()">المصروفات</button>
@@ -313,7 +313,7 @@ function renderCats(){
 
   const grid = document.getElementById('itemsGrid');
   const list = groups[currentCat] || [];
-  grid.innerHTML = list.map(it => itemCardHtml(it)).join('') || '<div class="state-msg">مفيش أصناف متاحة في القسم ده</div>';
+  grid.innerHTML = list.map(it => itemCardHtml(it)).join('') || '<div class="state-msg">مافي أصناف متاحة في القسم ده</div>';
 }
 
 function qtyInCart(name_ar, price){
@@ -476,7 +476,7 @@ function openInvoices(){
             <div class="meta">${escapeHtml(inv.employee)} — <span class="en">${inv.time}</span> — ${inv.payment==='cash'?'كاش':'بنكك'}${inv.status==='cancelled' ? ' — ملغاة' : ''}</div>
             ${inv.status !== 'cancelled' ? `<button class="void-btn" onclick="voidInvoicePrompt('${inv.id}')">إلغاء الفاتورة</button>` : ''}
           </div>
-        `).join('') || '<div class="state-msg">مفيش فواتير الليلة لسه</div>'}
+        `).join('') || '<div class="state-msg">مافي فواتير الليلة لسه</div>'}
         <button class="close-btn" onclick="closeModal()">قفل</button>
       </div>
     </div>`;
@@ -532,7 +532,7 @@ function openExpenses(){
                 <button class="del-btn" onclick="deleteExpensePrompt(${e.id})">حذف</button>
               </div>
             </div>
-          `).join('') || '<div class="state-msg">مفيش مصروفات اليوم لسه</div>'}
+          `).join('') || '<div class="state-msg">مافي مصروفات اليوم لسه</div>'}
         </div>
         <div class="add-expense-form">
           <input id="newExpName" placeholder="اسم المصروف (مثال: سكر وحليب)">
@@ -641,7 +641,7 @@ function openReport(dateStr){
 
   const rows = Object.entries(agg.byEmployee).map(([name, e]) => `
     <tr><td>${escapeHtml(name)}</td><td>${e.count}</td><td>${e.cash}</td><td>${e.card}</td><td>${e.total}</td></tr>
-  `).join('') || `<tr><td colspan="5">مفيش مبيعات في اليوم ده</td></tr>`;
+  `).join('') || `<tr><td colspan="5">مافي مبيعات في اليوم ده</td></tr>`;
 
   const expensesTotal = todayExpensesTotal(selectedDate);
   const netProfit = agg.grandTotal - expensesTotal;
