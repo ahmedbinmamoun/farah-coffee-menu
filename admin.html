@@ -315,7 +315,7 @@ function render(){
     <div class="category-block">
       <h2 class="category-title">${CATEGORY_LABELS[catKey].ar} <span class="en">— ${CATEGORY_LABELS[catKey].en}</span></h2>
       <div class="items-list">
-        ${list.map(itemRow).join('') || '<div style="font-size:12px;color:var(--gold-soft);padding:8px 0;">مفيش أصناف في القسم ده لسه</div>'}
+        ${list.map(itemRow).join('') || '<div style="font-size:12px;color:var(--gold-soft);padding:8px 0;">مافي أصناف في القسم ده لسه</div>'}
       </div>
       <button class="add-item-btn" onclick="showAddForm('${catKey}')">+ إضافة صنف جديد في ${CATEGORY_LABELS[catKey].ar}</button>
       <div class="add-form" id="form-${catKey}">
