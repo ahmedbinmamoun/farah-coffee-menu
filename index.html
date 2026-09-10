@@ -196,8 +196,9 @@ const CATEGORY_LABELS = {
   cold:  { ar: 'المشروبات الباردة', en: 'Cold Drinks' },
   shake: { ar: 'ميلك شيك',          en: 'Milkshake' },
   snacks:{ ar: 'الوجبات الخفيفة',   en: 'Snacks' },
+  beans: { ar: 'البُن',              en: 'Coffee Beans' },
 };
-const CATEGORY_ORDER = ['hot', 'cold', 'shake', 'snacks'];
+const CATEGORY_ORDER = ['hot', 'cold', 'shake', 'snacks', 'beans'];
 
 // A simple elegant cup glyph used whenever an item has no photo yet
 const CUP_GLYPH = `<span class="glyph"><svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -236,7 +237,7 @@ function render(items){
   const activeCats = CATEGORY_ORDER.filter(c => groups[c] && groups[c].length);
 
   if(!activeCats.length){
-    mainEl.innerHTML = `<div class="state-msg">المنيو فاضي حاليا.</div>`;
+    mainEl.innerHTML = `<div class="state-msg">المنيو فاضي دلوقتي.</div>`;
     nav.innerHTML = '';
     return;
   }

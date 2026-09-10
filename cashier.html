@@ -214,8 +214,9 @@ const CATEGORY_LABELS = {
   cold:  { ar: 'المشروبات الباردة', en: 'Cold Drinks' },
   shake: { ar: 'ميلك شيك',          en: 'Milkshake' },
   snacks:{ ar: 'الوجبات الخفيفة',   en: 'Snacks' },
+  beans: { ar: 'البُن',              en: 'Coffee Beans' },
 };
-const CATEGORY_ORDER = ['hot', 'cold', 'shake', 'snacks'];
+const CATEGORY_ORDER = ['hot', 'cold', 'shake', 'snacks', 'beans'];
 
 const LS_INVOICES = 'pos_invoices_v1';
 const LS_COUNTER  = 'pos_daily_counter_v1';
@@ -532,7 +533,7 @@ function openExpenses(){
                 <button class="del-btn" onclick="deleteExpensePrompt(${e.id})">حذف</button>
               </div>
             </div>
-          `).join('') || '<div class="state-msg">مافي مصروفات اليوم لسه</div>'}
+          `).join('') || '<div class="state-msg">مفيش مصروفات اليوم لسه</div>'}
         </div>
         <div class="add-expense-form">
           <input id="newExpName" placeholder="اسم المصروف (مثال: سكر وحليب)">
