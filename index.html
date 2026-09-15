@@ -185,20 +185,12 @@
   <img id="lightboxImg" src="" alt="">
 </div>
 
-<script>
-// ---- Supabase connection ----
-const SUPABASE_URL = 'https://omyucnjkqeyomtvijqwc.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9teXVjbmprcWV5b210dmlqcXdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1NTQ0NDUsImV4cCI6MjEwNDEzMDQ0NX0.jc8WAbBIpMCDzdLCf3RYk9ruLbInBJ7unmnr2u1SEkA';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script type="module">
+import { sb } from './shared/supabase-client.js';
+import { loadCategories, subscribeCategories } from './shared/categories.js';
+import { escapeHtml, escapeAttr } from './shared/format.js';
 
-const CATEGORY_LABELS = {
-  hot:   { ar: 'المشروبات الساخنة', en: 'Hot Drinks' },
-  cold:  { ar: 'المشروبات الباردة', en: 'Cold Drinks' },
-  shake: { ar: 'ميلك شيك',          en: 'Milkshake' },
-  snacks:{ ar: 'الوجبات الخفيفة',   en: 'Snacks' },
-  beans: { ar: 'البُن',              en: 'Coffee Beans' },
-};
-const CATEGORY_ORDER = ['hot', 'cold', 'shake', 'snacks', 'beans'];
+let CATEGORIES = [];
 
 // A simple elegant cup glyph used whenever an item has no photo yet
 const CUP_GLYPH = `<span class="glyph"><svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -212,7 +204,15 @@ const nav = document.getElementById('catNav');
 const mainEl = document.getElementById('menuMain');
 let currentCat = null;
 
+let lastItems = [];
+
 async function loadMenu(){
+  try{
+    CATEGORIES = await loadCategories();
+  }catch(err){
+    console.error(err);
+  }
+
   const { data, error } = await sb
     .from('items')
     .select('*')
@@ -224,7 +224,8 @@ async function loadMenu(){
     return;
   }
 
-  render(data || []);
+  lastItems = data || [];
+  render(lastItems);
 }
 
 function render(items){
@@ -234,7 +235,7 @@ function render(items){
     groups[it.category].push(it);
   });
 
-  const activeCats = CATEGORY_ORDER.filter(c => groups[c] && groups[c].length);
+  const activeCats = CATEGORIES.filter(c => groups[c.key] && groups[c.key].length);
 
   if(!activeCats.length){
     mainEl.innerHTML = `<div class="state-msg">المنيو فاضي دلوقتي.</div>`;
@@ -242,10 +243,10 @@ function render(items){
     return;
   }
 
-  if(!currentCat || !activeCats.includes(currentCat)) currentCat = activeCats[0];
+  if(!currentCat || !activeCats.some(c => c.key === currentCat)) currentCat = activeCats[0].key;
 
   nav.innerHTML = activeCats.map(c => `
-    <button data-cat="${c}" class="${c === currentCat ? 'active' : ''}">${CATEGORY_LABELS[c].ar}</button>
+    <button data-cat="${c.key}" class="${c.key === currentCat ? 'active' : ''}">${escapeHtml(c.name_ar)}</button>
   `).join('');
 
   nav.querySelectorAll('button').forEach(btn => {
@@ -253,10 +254,10 @@ function render(items){
   });
 
   mainEl.innerHTML = activeCats.map(c => `
-    <section class="category ${c === currentCat ? 'active' : ''}">
-      <h2 class="category-title">${CATEGORY_LABELS[c].ar} <span class="en">— ${CATEGORY_LABELS[c].en}</span></h2>
+    <section class="category ${c.key === currentCat ? 'active' : ''}">
+      <h2 class="category-title">${escapeHtml(c.name_ar)} <span class="en">— ${escapeHtml(c.name_en)}</span></h2>
       <div class="card-list">
-        ${groups[c].map((it, i) => cardHtml(it, i)).join('')}
+        ${groups[c.key].map((it, i) => cardHtml(it, i)).join('')}
       </div>
     </section>
   `).join('');
@@ -279,11 +280,6 @@ function cardHtml(it, i){
   </div>`;
 }
 
-function escapeHtml(str){
-  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-function escapeAttr(str){ return escapeHtml(str); }
-
 function openLightbox(url){
   const lb = document.getElementById('lightbox');
   document.getElementById('lightboxImg').src = url;
@@ -296,12 +292,18 @@ function closeLightbox(){
 // Initial load
 loadMenu();
 
-// Realtime: re-render instantly whenever admin changes anything in "items"
+// Realtime: re-render instantly whenever admin changes items or categories
 sb.channel('public:items')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, () => {
     loadMenu();
   })
   .subscribe();
+
+subscribeCategories(() => loadMenu());
+
+// Expose functions referenced from inline HTML onclick attributes
+// (needed because this script now runs as an ES module, not the global scope).
+Object.assign(window, { openLightbox, closeLightbox });
 </script>
 </body>
 </html>
