@@ -46,6 +46,23 @@ export async function addEmployee({ adminPin, name, pin, isAdmin }) {
   return data.employee;
 }
 
+export async function updateEmployee({ adminPin, id, name, pin, isAdmin }) {
+  const payload = { id };
+  if (name !== undefined) payload.name = name;
+  if (pin) payload.pin = pin; // empty/omitted pin means "leave it unchanged"
+  if (isAdmin !== undefined) payload.is_admin = isAdmin;
+
+  const { data, error } = await sb.functions.invoke('pos-manage-employee', {
+    body: { admin_pin: adminPin, action: 'update', payload },
+  });
+  if (error) {
+    const msg = (await readFunctionError(error)) || 'حصل خطأ في التعديل';
+    throw new Error(msg);
+  }
+  if (data?.error) throw new Error(data.error);
+  return data.employee;
+}
+
 export async function deleteEmployee({ adminPin, id }) {
   const { data, error } = await sb.functions.invoke('pos-manage-employee', {
     body: { admin_pin: adminPin, action: 'delete', payload: { id } },

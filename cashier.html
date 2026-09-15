@@ -245,7 +245,7 @@ import { sb } from './shared/supabase-client.js';
 import { escapeHtml, todayStr, timeStr } from './shared/format.js';
 import { toast } from './shared/toast.js';
 import { loadCategories, subscribeCategories } from './shared/categories.js';
-import { fetchEmployeesPublic, loginEmployee, verifyAdminPin, addEmployee, deleteEmployee } from './shared/employees.js';
+import { fetchEmployeesPublic, loginEmployee, verifyAdminPin, addEmployee, updateEmployee, deleteEmployee } from './shared/employees.js';
 import {
   createDirectOrder, fetchOrdersForDate, fetchHeldOrders, fetchOpenTableOrders,
   voidOrder, computeDayAggregation, subscribeOrders,
@@ -1011,7 +1011,10 @@ function renderManageEmployeesModal(){
   listEl.innerHTML = employees.map(e => `
     <div class="emp-manage-row">
       <span>${e.is_admin ? '<span class="tag">أدمن</span>' : ''}${escapeHtml(e.name)}</span>
-      <button class="del-btn" onclick="deleteEmployeePrompt(${e.id})">حذف</button>
+      <div style="display:flex; gap:6px;">
+        <button class="del-btn" onclick="editEmployeeUI(${e.id})">تعديل</button>
+        <button class="del-btn" onclick="deleteEmployeePrompt(${e.id})">حذف</button>
+      </div>
     </div>
   `).join('');
 }
@@ -1031,6 +1034,48 @@ async function addEmployeeUI(){
     toast('✓ اتضاف الموظف');
   }catch(err){
     alert(err.message || 'حصل خطأ في الإضافة');
+  }
+}
+
+function editEmployeeUI(id){
+  const emp = employees.find(e => e.id === id);
+  if(!emp) return;
+  document.getElementById('modalRoot').innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-box">
+        <h3>تعديل بيانات الموظف</h3>
+        <div class="add-emp-form">
+          <input id="editEmpName" value="${escapeAttr(emp.name)}" placeholder="اسم الموظف">
+          <input id="editEmpPin" placeholder="PIN جديد (سيبه فاضي لو مش هتغيّره)" inputmode="numeric" maxlength="6">
+          <label><input type="checkbox" id="editEmpAdmin" ${emp.is_admin ? 'checked' : ''}> صلاحية أدمن</label>
+          <input id="editEmpAdminPin" type="password" inputmode="numeric" maxlength="6" placeholder="PIN الأدمن الحالي (للتأكيد)">
+          <button class="confirm-btn" onclick="submitEditEmployee(${id})">حفظ التعديلات</button>
+        </div>
+        <div class="modal-error" id="editEmpError">PIN غلط — لازم PIN أدمن</div>
+        <button class="close-btn" onclick="renderManageEmployeesModal()">رجوع</button>
+      </div>
+    </div>`;
+}
+
+async function submitEditEmployee(id){
+  const name = document.getElementById('editEmpName').value.trim();
+  const pin = document.getElementById('editEmpPin').value.trim();
+  const isAdmin = document.getElementById('editEmpAdmin').checked;
+  const adminPin = document.getElementById('editEmpAdminPin').value.trim();
+  const errEl = document.getElementById('editEmpError');
+  errEl.classList.remove('show');
+
+  if(!name){ errEl.textContent = 'لازم اسم الموظف'; errEl.classList.add('show'); return; }
+  if(!adminPin){ errEl.textContent = 'لازم تدخل PIN الأدمن للتأكيد'; errEl.classList.add('show'); return; }
+
+  try{
+    await updateEmployee({ adminPin, id, name, pin: pin || undefined, isAdmin });
+    employees = await fetchEmployeesPublic();
+    renderManageEmployeesModal();
+    toast('✓ اتحفظت بيانات الموظف');
+  }catch(err){
+    errEl.textContent = err.message || 'حصل خطأ في الحفظ';
+    errEl.classList.add('show');
   }
 }
 
@@ -1062,7 +1107,8 @@ Object.assign(window, {
   openTablesScreen, openTable, startTakeaway, openHeldInvoices, resumeHeldOrder, backToDirectSale,
   openInvoices, voidInvoicePrompt, openExpenses, addExpenseUI, deleteExpensePrompt,
   openReport, downloadExcelReport, sendReportToTelegram,
-  openManageEmployees, addEmployeeUI, deleteEmployeePrompt,
+  openManageEmployees, addEmployeeUI, editEmployeeUI, submitEditEmployee, deleteEmployeePrompt,
+  renderManageEmployeesModal,
 });
 </script>
 </body>

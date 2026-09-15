@@ -30,7 +30,7 @@ function getServiceRoleKey(): string {
 
 interface Payload {
   admin_pin?: string;
-  action?: "add" | "delete";
+  action?: "add" | "delete" | "update";
   payload?: {
     name?: string;
     pin?: string;
@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
   const action = body.action;
   const payload = body.payload || {};
 
-  if (!admin_pin || (action !== "add" && action !== "delete")) {
+  if (!admin_pin || (action !== "add" && action !== "delete" && action !== "update")) {
     return jsonResponse({ error: "admin_pin and a valid action are required" }, 400);
   }
 
@@ -92,6 +92,35 @@ Deno.serve(async (req) => {
     if (error) {
       console.error(error);
       return jsonResponse({ error: "حصل خطأ في الإضافة" }, 500);
+    }
+    return jsonResponse({ employee: data });
+  }
+
+  if (action === "update") {
+    const id = Number(payload.id);
+    if (!id) return jsonResponse({ error: "id is required" }, 400);
+
+    // Partial update: only fields actually sent get changed. Lets the UI change
+    // just the name, or just the PIN, or just the admin flag, independently.
+    const updates: Record<string, unknown> = {};
+    if (typeof payload.name === "string" && payload.name.trim()) updates.name = payload.name.trim();
+    if (typeof payload.pin === "string" && payload.pin.trim()) updates.pin = payload.pin.trim();
+    if (typeof payload.is_admin === "boolean") updates.is_admin = payload.is_admin;
+
+    if (Object.keys(updates).length === 0) {
+      return jsonResponse({ error: "مفيش تعديل لحفظه" }, 400);
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("pos_employees")
+      .update(updates)
+      .eq("id", id)
+      .select("id, name, is_admin")
+      .single();
+
+    if (error) {
+      console.error(error);
+      return jsonResponse({ error: "حصل خطأ في التعديل" }, 500);
     }
     return jsonResponse({ employee: data });
   }
