@@ -29,6 +29,19 @@ export async function setTableActive(id, active) {
   if (error) throw error;
 }
 
+export async function renameTable(id, label) {
+  const { error } = await sb.from('tables').update({ label }).eq('id', id);
+  if (error) throw error;
+}
+
+// Hard delete. Will fail (FK violation) if the table has any order history —
+// that's intentional: deactivate (setTableActive) instead of deleting a table
+// that's part of past orders, to keep those orders' history intact.
+export async function deleteTable(id) {
+  const { error } = await sb.from('tables').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export function subscribeTables(onChange) {
   return sb
     .channel('public:tables')

@@ -266,7 +266,7 @@ import { sb } from './shared/supabase-client.js';
 import { escapeHtml, escapeAttr } from './shared/format.js';
 import { toast } from './shared/toast.js';
 import { loadCategories, subscribeCategories } from './shared/categories.js';
-import { fetchAllTables, addTable, setTableActive, subscribeTables } from './shared/tables.js';
+import { fetchAllTables, addTable, setTableActive, renameTable, deleteTable, subscribeTables } from './shared/tables.js';
 
 let CATEGORIES = [];
 let TABLES = [];
@@ -560,6 +560,7 @@ function renderCategoriesMgmt(){
         </div>
         <div class="mgmt-controls">
           <input class="sort-input" type="number" value="${cat.sort_order}" title="الترتيب" onchange="updateCategorySort('${cat.key}', this.value)">
+          <button class="delete-btn" title="تعديل الاسم" onclick="editCategoryUI('${cat.key}')">✎</button>
           <button class="delete-btn" title="حذف القسم" onclick="deleteCategory('${cat.key}', ${count})">✕</button>
         </div>
       </div>`;
@@ -619,6 +620,48 @@ async function deleteCategory(key, itemCount){
   await refreshCategories();
 }
 
+function editCategoryUI(key){
+  const cat = CATEGORIES.find(c => c.key === key);
+  if(!cat) return;
+  document.getElementById('modalRoot').innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-box">
+        <h3>تعديل اسم القسم</h3>
+        <div class="pass-form">
+          <input id="editCatAr" value="${escapeAttr(cat.name_ar)}" placeholder="اسم القسم بالعربي">
+          <input id="editCatEn" value="${escapeAttr(cat.name_en)}" placeholder="Category name (English)">
+          <button onclick="submitEditCategory('${key}')">حفظ</button>
+        </div>
+        <div class="modal-error" id="editCatError"></div>
+        <button class="close-btn" onclick="closeModal()">إلغاء</button>
+      </div>
+    </div>`;
+}
+
+async function submitEditCategory(key){
+  const name_ar = document.getElementById('editCatAr').value.trim();
+  const name_en = document.getElementById('editCatEn').value.trim();
+  const errEl = document.getElementById('editCatError');
+  errEl.classList.remove('show');
+
+  if(!name_ar || !name_en){
+    errEl.textContent = 'لازم اسم عربي وإنجليزي';
+    errEl.classList.add('show');
+    return;
+  }
+
+  const { error } = await sb.from('categories').update({ name_ar, name_en }).eq('key', key);
+  if(error){
+    errEl.textContent = 'حصل خطأ: ' + error.message;
+    errEl.classList.add('show');
+    return;
+  }
+
+  closeModal();
+  toast('✓ اتحفظ اسم القسم');
+  await refreshCategories();
+}
+
 // ================= TABLES MANAGEMENT =================
 async function loadTablesMgmt(){
   try{
@@ -642,6 +685,8 @@ function renderTablesMgmt(){
         </div>
         <div class="mgmt-controls">
           <button class="delete-btn" title="${t.active ? 'تعطيل' : 'تفعيل'}" onclick="toggleTableActiveUI(${t.id}, ${!t.active})">${t.active ? '⏸' : '▶'}</button>
+          <button class="delete-btn" title="تعديل الاسم" onclick="editTableUI(${t.id})">✎</button>
+          <button class="delete-btn" title="حذف الترابيزة نهائيًا" onclick="deleteTableUI(${t.id})">✕</button>
         </div>
       </div>`).join('') || '<div class="state-msg">مفيش ترابيزات لسه</div>'}
     <div class="mgmt-add-form">
@@ -674,6 +719,57 @@ async function toggleTableActiveUI(id, active){
   }catch(err){
     console.error(err);
     toast('حصل خطأ في الحفظ');
+  }
+}
+
+function editTableUI(id){
+  const t = TABLES.find(t => t.id === id);
+  if(!t) return;
+  document.getElementById('modalRoot').innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-box">
+        <h3>تعديل اسم الترابيزة</h3>
+        <div class="pass-form">
+          <input id="editTableLabel" value="${escapeAttr(t.label)}" placeholder="رقم/اسم الترابيزة">
+          <button onclick="submitEditTable(${id})">حفظ</button>
+        </div>
+        <div class="modal-error" id="editTableError"></div>
+        <button class="close-btn" onclick="closeModal()">إلغاء</button>
+      </div>
+    </div>`;
+}
+
+async function submitEditTable(id){
+  const label = document.getElementById('editTableLabel').value.trim();
+  const errEl = document.getElementById('editTableError');
+  errEl.classList.remove('show');
+
+  if(!label){
+    errEl.textContent = 'لازم تكتب اسم الترابيزة';
+    errEl.classList.add('show');
+    return;
+  }
+
+  try{
+    await renameTable(id, label);
+    closeModal();
+    toast('✓ اتحفظ اسم الترابيزة');
+    await loadTablesMgmt();
+  }catch(err){
+    errEl.textContent = 'حصل خطأ: ' + err.message;
+    errEl.classList.add('show');
+  }
+}
+
+async function deleteTableUI(id){
+  if(!confirm('متأكد إنك عايز تحذف الترابيزة دي نهائيًا؟')) return;
+  try{
+    await deleteTable(id);
+    toast('✓ اتحذفت الترابيزة');
+    await loadTablesMgmt();
+  }catch(err){
+    console.error(err);
+    toast('الترابيزة دي مرتبطة بطلبات سابقة — عطّلها (⏸) بدل الحذف');
   }
 }
 
@@ -731,8 +827,8 @@ function closeModal(){
 Object.assign(window, {
   doLogin, doLogout, openChangePassword, submitPasswordChange, closeModal,
   showAddForm, addItem, uploadImage, updatePrice, toggleAvail, deleteItem,
-  addCategory, updateCategorySort, deleteCategory,
-  addTableUI, toggleTableActiveUI,
+  addCategory, updateCategorySort, deleteCategory, editCategoryUI, submitEditCategory,
+  addTableUI, toggleTableActiveUI, editTableUI, submitEditTable, deleteTableUI,
 });
 
 // Start: check if already logged in
