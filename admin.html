@@ -544,6 +544,7 @@ async function refreshCategories(){
     return;
   }
   renderCategoriesMgmt();
+  render(); // the items-by-category list below also depends on CATEGORIES
 }
 
 function renderCategoriesMgmt(){
