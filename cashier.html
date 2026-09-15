@@ -242,7 +242,7 @@
 
 <script type="module">
 import { sb } from './shared/supabase-client.js';
-import { escapeHtml, todayStr, timeStr } from './shared/format.js';
+import { escapeHtml, escapeAttr, todayStr, timeStr } from './shared/format.js';
 import { toast } from './shared/toast.js';
 import { loadCategories, subscribeCategories } from './shared/categories.js';
 import { fetchEmployeesPublic, loginEmployee, verifyAdminPin, addEmployee, updateEmployee, deleteEmployee } from './shared/employees.js';
